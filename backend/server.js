@@ -26,7 +26,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/courses', require('./routes/courseRoutes')); // <-- ADD THIS LINE
 // We will add real routes here in the next step (auth, courses, payments)
-
+app.use('/api/schedules', require('./routes/scheduleRoutes')); // <-- ADD THIS
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
