@@ -15,11 +15,16 @@ const app = express();
 app.use(cors());
 app.use(express.json()); // Parses incoming JSON requests
 
+// Routes
+app.use('/api/auth', require('./routes/authRoutes')); // <-- ADDED THIS LINE
+
 // Basic Route for testing
 app.get('/api/health', (req, res) => {
     res.status(200).json({ message: 'LMS API is running smoothly.' });
 });
-
+// Routes
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/courses', require('./routes/courseRoutes')); // <-- ADD THIS LINE
 // We will add real routes here in the next step (auth, courses, payments)
 
 const PORT = process.env.PORT || 5000;
