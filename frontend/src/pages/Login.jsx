@@ -21,7 +21,17 @@ const Login = () => {
     const result = await login(email, password);
     
     if (result.success) {
-      navigate('/dashboard');
+      // Grab the user data that AuthContext just saved
+      const loggedInUser = JSON.parse(localStorage.getItem('user'));
+      
+      // SMART ROUTING: Send them to their specific URL
+      if (loggedInUser.role === 'admin') {
+        navigate('/admin');
+      } else if (loggedInUser.role === 'teacher') {
+        navigate('/teacher');
+      } else {
+        navigate('/dashboard'); // Default for students
+      }
     } else {
       setError(result.message);
       setIsLoading(false);

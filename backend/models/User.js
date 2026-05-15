@@ -1,3 +1,4 @@
+// backend/models/User.js
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
@@ -10,11 +11,13 @@ const userSchema = new mongoose.Schema({
         enum: ['student', 'teacher', 'admin'], 
         default: 'student' 
     },
-    enrolledCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
-    progress: [{
-        courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
-        completedVideos: [{ type: String }] // Video IDs
-    }],
+    // Tuition-Specific Fields
+    std: { type: String }, // e.g., "10th", "11th Science"
+    batch: { type: String, enum: ['Morning', 'Evening', ''] }, 
+    bgroup: { type: String }, // Blood group
+    
+    // Management Toggles
+    isBlocked: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 

@@ -7,10 +7,8 @@ import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard'; // <-- WE ADDED THIS IMPORT!
-import CreateCourse from './pages/CreateCourse';
-// Import it at the top
-import ManageSchedule from './pages/ManageSchedule';
 
+import TeacherPortal from './pages/TeacherPortal';
 // Add this route inside your <Routes> block:
 // Temporary Home Page (We will build this later)
 const Home = () => <div className="p-10 text-2xl font-bold text-center mt-20">Marketing Home Page</div>;
@@ -30,10 +28,11 @@ function App() {
             
             {/* Now it loads your actual Dashboard.jsx file! */}
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/create-course" element={<CreateCourse />} />
+            <Route path="/teacher" element={<TeacherPortal />} />
             <Route path="*" element={<Navigate to="/" />} />
-            <Route path="/manage-schedule" element={<ManageSchedule />} />
-
+            <Route path="/admin" element={<Dashboard />} />     {/* Admins */}
+            
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
           
         </div>
