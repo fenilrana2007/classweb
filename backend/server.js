@@ -13,7 +13,7 @@ const app = express();
 
 // Middlewares
 app.use(cors({
-    origin: 'https://fenilrana.netlify.app/', // Using '*' allows requests from anywhere while you test. 
+    origin: '*', // Using '*' allows requests from anywhere while you test. 
     credentials: true
 }));
 app.use(express.json()); // Parses incoming JSON requests
