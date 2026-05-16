@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Create an Axios instance pointing to your backend
 const api = axios.create({
-    baseURL: 'http://localhost:5000/api', // Your Node.js server URL
+    baseURL: 'https://classweb-9ysp.onrender.com', // Your Node.js server URL
 });
 
 // Automatically attach the JWT token to every request if the user is logged in
