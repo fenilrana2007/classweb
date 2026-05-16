@@ -348,7 +348,7 @@ const AttendanceTab = ({ students }) => {
             <div><label className="block text-sm font-bold text-gray-700 mb-1">Standard</label><select value={fetchStd} onChange={e => setFetchStd(e.target.value)} className="w-full p-2 border rounded"><option value="All">All Standards</option>{standardOptions.map(std => <option key={std} value={std}>{std}</option>)}</select></div>
             <div><label className="block text-sm font-bold text-gray-700 mb-1">Batch</label><select value={fetchBatch} onChange={e => setFetchBatch(e.target.value)} className="w-full p-2 border rounded"><option value="All">All Batches</option><option value="Morning">Morning</option><option value="Evening">Evening</option></select></div>
             <div><label className="block text-sm font-bold text-gray-700 mb-1">Status Filter</label><select value={viewStatusFilter} onChange={e => setViewStatusFilter(e.target.value)} className="w-full p-2 border rounded border-purple-300 font-bold text-purple-700"><option value="All">Show All</option><option value="Present">Present Only</option><option value="Absent">Absent Only</option></select></div>
-            <button onClick={handleFetchAttendance} disabled={isFetching} className="bg-gray-900 text-white p-2 rounded-lg font-bold hover:bg-gray-800 h-[42px]">{isFetching ? 'Loading...' : 'Fetch'}</button>
+            <button onClick={handleFetchAttendance} disabled={isFetching} className="bg-gray-900 text-white p-2 rounded-lg font-bold hover:bg-gray-800 `h-10.5`">{isFetching ? 'Loading...' : 'Fetch'}</button>
           </div>
           <div className="overflow-x-auto border rounded-xl">
             <table className="w-full text-left border-collapse">
