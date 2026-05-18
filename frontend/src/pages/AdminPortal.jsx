@@ -110,7 +110,7 @@ const AdminPortal = () => {
       {/* Tab Contents */}
       {activeTab === 'overview' && <OverviewTab stats={stats} />}
       {activeTab === 'staff' && <StaffTab teachers={teachers} setTeachers={setTeachers} />}
-      {activeTab === 'noticeboard' && <NoticeboardTab messages={messages} />}
+      {activeTab === 'noticeboard' && <NoticeboardTab messages={messages} onExport={handleExportMessages} onClear={handleClearAllMessages}/>}
       {activeTab === 'broadcast' && <BroadcastTab messages={messages} setMessages={setMessages} user={user} />}
 
     </div>
