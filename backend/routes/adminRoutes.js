@@ -18,4 +18,6 @@ router.delete('/users/:id', deleteUser);
 router.put('/teachers/:id', updateTeacher);
 router.get('/messages', getMessages);
 router.post('/messages', sendMessage);
+
+router.delete('/messages', deleteAllMessages); // <-- ADD THIS LINE
 module.exports = router;
