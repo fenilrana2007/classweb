@@ -3,18 +3,36 @@ const Message = require('../models/Message');
 const bcrypt = require('bcryptjs');
 
 // 1. Get Platform-Wide Stats
+// const getAdminStats = async (req, res) => {
+//     try {
+//         const totalStudents = await User.countDocuments({ role: 'student' });
+//         const totalTeachers = await User.countDocuments({ role: 'teacher' });
+        
+//         // Count schedules for today
+//         const startOfDay = new Date().setHours(0, 0, 0, 0);
+//         const endOfDay = new Date().setHours(23, 59, 59, 999);
+//         // const classesToday = await Schedule.countDocuments({ date: { $gte: startOfDay, $lte: endOfDay } });
+
+//         res.json({ totalStudents, totalTeachers, classesToday });
+//     } catch (error) { res.status(500).json({ message: 'Server Error' }); }
+// };
 const getAdminStats = async (req, res) => {
     try {
         const totalStudents = await User.countDocuments({ role: 'student' });
         const totalTeachers = await User.countDocuments({ role: 'teacher' });
         
-        // Count schedules for today
-        const startOfDay = new Date().setHours(0, 0, 0, 0);
-        const endOfDay = new Date().setHours(23, 59, 59, 999);
-        // const classesToday = await Schedule.countDocuments({ date: { $gte: startOfDay, $lte: endOfDay } });
-
-        res.json({ totalStudents, totalTeachers, classesToday });
-    } catch (error) { res.status(500).json({ message: 'Server Error' }); }
+        // Return 0 or remove this line entirely if your frontend doesn't need it
+        const classesToday = 0; 
+        
+        res.json({ 
+            totalStudents, 
+            totalTeachers, 
+            classesToday 
+        });
+    } catch (error) {
+        console.error("Admin Stats Error:", error); // This helps you see the REAL error in Render logs
+        res.status(500).json({ message: 'Server Error' });
+    }
 };
 
 // 2. Manage Teachers (Fetch, Add, Block, Delete)
