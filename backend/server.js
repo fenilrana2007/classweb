@@ -17,7 +17,7 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json()); // Parses incoming JSON requests
-
+app.use('/api/students', require('./routes/studentRoutes'));
 // Routes
 app.use('/api/auth', require('./routes/authRoutes')); // <-- ADDED THIS LINE
 
