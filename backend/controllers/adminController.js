@@ -88,6 +88,15 @@ const sendMessage = async (req, res) => {
         res.status(201).json(message);
     } catch (error) { res.status(500).json({ message: 'Server Error' }); }
 };
+// Add this below your sendMessage function
+const deleteAllMessages = async (req, res) => {
+    try {
+        await Message.deleteMany({}); // Wipes the entire collection
+        res.json({ message: 'All platform messages have been permanently deleted.' });
+    } catch (error) { 
+        res.status(500).json({ message: 'Server Error' }); 
+    }
+};
 module.exports = {
-    getAdminStats, getTeachers, addTeacher, toggleBlockUser, deleteUser,updateTeacher, getMessages, sendMessage
+    getAdminStats, getTeachers, addTeacher, toggleBlockUser, deleteUser,updateTeacher, getMessages, sendMessage, deleteAllMessages
 };

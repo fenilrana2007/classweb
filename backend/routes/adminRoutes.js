@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { 
-    getAdminStats, getTeachers, addTeacher, toggleBlockUser, deleteUser, updateTeacher, getMessages, sendMessage 
+    getAdminStats, getTeachers, addTeacher, toggleBlockUser, deleteUser, updateTeacher, getMessages, sendMessage , deleteAllMessages
 } = require('../controllers/adminController');
 const { protect, adminOnly } = require('../middlewares/authMiddleware');
 
