@@ -3,11 +3,11 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import { 
-  BookOpen, Calendar, Users, LayoutDashboard, UserPlus, 
-  Ban, Edit, Trash2, MessageSquare, CheckSquare, Send, Bell, Clock
+  BookOpen, LayoutDashboard, CheckSquare, MessageSquare, 
+  Send, Bell, Clock, GraduationCap 
 } from 'lucide-react';
-import StudentsTab from '../components/StudentsTab';
-import { GraduationCap } from 'lucide-react';
+import StudentsTab from '../components/StudentsTab'; // <--- The correct imported component
+
 const standardOptions = [
   "1st Std", "2nd Std", "3rd Std", "4th Std", "5th Std", "6th Std", 
   "7th Std", "8th Std", "9th Std", "10th Std", "11th Commerce", "12th Commerce"
@@ -19,7 +19,7 @@ const TeacherPortal = () => {
   
   // Master State
   const [stats, setStats] = useState({ batches: 0, totalStudents: 0, classesToday: 0 });
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState([]); // Kept here so AttendanceTab can still use it
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -64,21 +64,20 @@ const TeacherPortal = () => {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs - Fixed duplicates here */}
       <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-200 pb-4">
         <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<LayoutDashboard size={18} />} text="Noticeboard" />
-        <TabButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<Users size={18} />} text="Manage Students" />
+        <TabButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<GraduationCap size={18} />} text="Manage Students" />
         <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckSquare size={18} />} text="Attendance" />
         <TabButton active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} icon={<MessageSquare size={18} />} text="Broadcast" />
-     <TabButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<GraduationCap size={18} />} text="Manage Students" />
       </div>
 
-      {/* Content Rendering */}
+      {/* Content Rendering - Fixed duplicates here */}
       {activeTab === 'overview' && <OverviewTab messages={messages} />}
-      {activeTab === 'students' && <StudentsTab students={students} setStudents={setStudents} />}
+      {activeTab === 'students' && <StudentsTab />} 
       {activeTab === 'attendance' && <AttendanceTab students={students} />}
       {activeTab === 'messages' && <MessagesTab messages={messages} setMessages={setMessages} user={user} />}
-      {activeTab === 'students' && <StudentsTab />}
+      
     </div>
   );
 };
@@ -126,121 +125,7 @@ const OverviewTab = ({ messages }) => (
 );
 
 /* =========================================================================
-   2. MANAGE STUDENTS TAB (Full CRUD + Block)
-   ========================================================================= */
-const StudentsTab = ({ students, setStudents }) => {
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', std: '', batch: '', bgroup: '' });
-
-  const handleAddNewClick = () => {
-    setEditingId(null);
-    setFormData({ name: '', email: '', phone: '', password: '', std: '', batch: '', bgroup: '' });
-    setShowForm(!showForm);
-  };
-
-  const handleEditClick = (student) => {
-    setEditingId(student._id);
-    setFormData({ 
-      name: student.name, email: student.email, phone: student.phone || '', 
-      password: '', std: student.std || '', batch: student.batch || '', bgroup: student.bgroup || '' 
-    });
-    setShowForm(true);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editingId) {
-        const res = await api.put(`/teacher/students/${editingId}`, formData);
-        setStudents(students.map(s => s._id === editingId ? res.data : s));
-        alert("Student Updated Successfully!");
-      } else {
-        const res = await api.post('/teacher/students', formData);
-        setStudents([...students, res.data]);
-        alert("Student Added Successfully!");
-      }
-      setShowForm(false);
-    } catch (err) { alert(err.response?.data?.message || "Error saving student"); }
-  };
-
-  const handleToggleBlock = async (id) => {
-    try {
-      await api.put(`/teacher/students/${id}/block`);
-      setStudents(students.map(s => s._id === id ? { ...s, isBlocked: !s.isBlocked } : s));
-    } catch (err) { alert("Error updating status"); }
-  };
-
-  const handleDelete = async (id) => {
-    if(window.confirm("Are you sure you want to delete this student?")) {
-      try {
-        await api.delete(`/teacher/students/${id}`);
-        setStudents(students.filter(s => s._id !== id));
-      } catch (err) { alert("Error deleting student"); }
-    }
-  };
-
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Student Directory</h2>
-        <button onClick={handleAddNewClick} className="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-bold">
-          <UserPlus size={16} /> {showForm && !editingId ? 'Cancel' : 'Add New Student'}
-        </button>
-      </div>
-
-      {showForm && (
-        <form onSubmit={handleSubmit} className="mb-8 p-6 bg-purple-50 rounded-xl border border-purple-100">
-          <h3 className="font-bold text-lg mb-4 text-purple-900">{editingId ? 'Edit Student Details' : 'Create New Student'}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <input required type="text" placeholder="Full Name" value={formData.name} className="p-2 border rounded" onChange={e => setFormData({...formData, name: e.target.value})} />
-            <input required type="email" placeholder="Email" value={formData.email} disabled={editingId} className={`p-2 border rounded ${editingId ? 'bg-gray-100' : ''}`} onChange={e => setFormData({...formData, email: e.target.value})} />
-            {!editingId && <input required type="password" placeholder="Password" value={formData.password} className="p-2 border rounded" onChange={e => setFormData({...formData, password: e.target.value})} />}
-            <input type="text" placeholder="Phone" value={formData.phone} className="p-2 border rounded" onChange={e => setFormData({...formData, phone: e.target.value})} />
-            <select required value={formData.std} className="p-2 border rounded" onChange={e => setFormData({...formData, std: e.target.value})}>
-              <option value="">Select Standard</option>
-              {standardOptions.map(std => <option key={std} value={std}>{std}</option>)}
-            </select>
-            <select required value={formData.batch} className="p-2 border rounded" onChange={e => setFormData({...formData, batch: e.target.value})}>
-              <option value="">Select Batch</option><option value="Morning">Morning</option><option value="Evening">Evening</option>
-            </select>
-            <input type="text" placeholder="Blood Group" value={formData.bgroup} className="p-2 border rounded" onChange={e => setFormData({...formData, bgroup: e.target.value})} />
-          </div>
-          <div className="flex gap-2">
-            <button type="submit" className="bg-purple-600 text-white px-6 py-2 rounded-lg font-bold">{editingId ? 'Save Changes' : 'Save to Database'}</button>
-            <button type="button" onClick={() => setShowForm(false)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold">Cancel</button>
-          </div>
-        </form>
-      )}
-
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b"><th className="p-3">Name</th><th className="p-3">Batch info</th><th className="p-3">Status</th><th className="p-3">Actions</th></tr>
-          </thead>
-          <tbody>
-            {students.length === 0 && <tr><td colSpan="4" className="p-4 text-center text-gray-500">No students found.</td></tr>}
-            {students.map(student => (
-              <tr key={student._id} className={`border-b hover:bg-gray-50 ${student.isBlocked ? 'opacity-50' : ''}`}>
-                <td className="p-3 font-medium">{student.name}</td>
-                <td className="p-3 text-sm">{student.std} • {student.batch}</td>
-                <td className="p-3"><span className={`px-2 py-1 rounded text-xs ${student.isBlocked ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>{student.isBlocked ? 'Blocked' : 'Active'}</span></td>
-                <td className="p-3 flex gap-2">
-                  <button onClick={() => handleEditClick(student)} className="p-1 text-blue-600 hover:bg-blue-50 rounded" title="Edit"><Edit size={16} /></button>
-                  <button onClick={() => handleToggleBlock(student._id)} className="p-1 text-orange-600 hover:bg-orange-50 rounded" title="Block/Unblock"><Ban size={16} /></button>
-                  <button onClick={() => handleDelete(student._id)} className="p-1 text-red-600 hover:bg-red-50 rounded" title="Delete"><Trash2 size={16} /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-/* =========================================================================
-   3. ATTENDANCE TAB (Dual Mode: Record & View)
+   2. ATTENDANCE TAB (Dual Mode: Record & View)
    ========================================================================= */
 const AttendanceTab = ({ students }) => {
   const [tabMode, setTabMode] = useState('record');
@@ -371,7 +256,7 @@ const AttendanceTab = ({ students }) => {
 };
 
 /* =========================================================================
-   4. MESSAGES TAB (Compose Broadcasts)
+   3. MESSAGES TAB (Compose Broadcasts)
    ========================================================================= */
 const MessagesTab = ({ messages, setMessages, user }) => {
   const [newContent, setNewContent] = useState('');

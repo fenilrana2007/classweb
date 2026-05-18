@@ -1,5 +1,4 @@
 const User = require('../models/User');
-const Schedule = require('../models/Schedule');
 const Message = require('../models/Message');
 const bcrypt = require('bcryptjs');
 
@@ -12,7 +11,7 @@ const getAdminStats = async (req, res) => {
         // Count schedules for today
         const startOfDay = new Date().setHours(0, 0, 0, 0);
         const endOfDay = new Date().setHours(23, 59, 59, 999);
-        const classesToday = await Schedule.countDocuments({ date: { $gte: startOfDay, $lte: endOfDay } });
+        // const classesToday = await Schedule.countDocuments({ date: { $gte: startOfDay, $lte: endOfDay } });
 
         res.json({ totalStudents, totalTeachers, classesToday });
     } catch (error) { res.status(500).json({ message: 'Server Error' }); }
