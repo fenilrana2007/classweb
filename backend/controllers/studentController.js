@@ -76,5 +76,13 @@ const getStudentDashboardData = async (req, res) => {
         res.status(500).json({ message: 'Server Error loading dashboard' });
     }
 };
-
-module.exports = { addStudent, getStudents, getStudentDashboardData };
+const deleteAllStudents = async (req, res) => {
+    try {
+        // We only delete users with the 'student' role
+        await User.deleteMany({ role: 'student' });
+        res.json({ message: 'All student accounts have been permanently deleted.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error during student cleanup' });
+    }
+};
+module.exports = { addStudent, getStudents, getStudentDashboardData, deleteAllStudents };

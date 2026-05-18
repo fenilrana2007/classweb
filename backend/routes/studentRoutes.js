@@ -17,5 +17,5 @@ router.get('/dashboard', protect, getStudentDashboardData);
 // Manage Student Accounts (You can add specific admin/teacher middleware here later if needed)
 router.post('/', protect, addStudent);
 router.get('/', protect, getStudents);
-
+router.delete('/all', protect, deleteAllStudents);
 module.exports = router;
