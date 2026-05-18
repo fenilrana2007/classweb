@@ -1,9 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const { getStudentDashboardData } = require('../controllers/studentController');
+const { addStudent, getStudents, getStudentDashboardData } = require('../controllers/studentController');
 const { protect } = require('../middlewares/authMiddleware');
 
-// Only logged-in users can access this
+// ==========================================
+// STUDENT ENDPOINTS
+// ==========================================
+
+// Dashboard Data (For the logged-in student)
 router.get('/dashboard', protect, getStudentDashboardData);
+
+// ==========================================
+// ADMIN / TEACHER ENDPOINTS
+// ==========================================
+
+// Manage Student Accounts (You can add specific admin/teacher middleware here later if needed)
+router.post('/', protect, addStudent);
+router.get('/', protect, getStudents);
 
 module.exports = router;
