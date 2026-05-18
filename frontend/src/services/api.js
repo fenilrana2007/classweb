@@ -5,7 +5,7 @@ import axios from 'axios';
 const api = axios.create({
     baseURL: 'https://classweb-9ysp.onrender.com', // Your Node.js server URL
 });
-
+console.log("TEST GIT CHANGE");
 // Automatically attach the JWT token to every request if the user is logged in
 api.interceptors.request.use(
     (config) => {
