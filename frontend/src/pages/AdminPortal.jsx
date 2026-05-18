@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import { 
   ShieldCheck, Users, LayoutDashboard, UserPlus, 
-  Ban, Edit, Trash2, Send, Bell, Clock 
+  Ban, Edit, Trash2, Send, Bell, Clock, Download
 } from 'lucide-react';
 
 const AdminPortal = () => {
@@ -36,7 +36,49 @@ const AdminPortal = () => {
     };
     if (user && user.role === 'admin') fetchData();
   }, [user]);
+    // --- MASTER ADMIN ACTIONS ---
+  
+  const handleExportMessages = () => {
+    if (messages.length === 0) return alert("No messages to export.");
 
+    // 1. Create CSV Headers
+    let csvContent = "Date,Sender Name,Sender Role,Recipient Group,Message Content\n";
+    
+    // 2. Loop through messages and format them
+    messages.forEach(msg => {
+      const date = new Date(msg.createdAt).toLocaleString();
+      const senderName = msg.sender?.name || 'Unknown';
+      const senderRole = msg.sender?.role || 'Unknown';
+      const recipient = msg.recipientGroup;
+      // Remove newlines and commas from content so it doesn't break the CSV format
+      const safeContent = msg.content.replace(/,/g, ';').replace(/\n/g, ' '); 
+      
+      csvContent += `"${date}","${senderName}","${senderRole}","${recipient}","${safeContent}"\n`;
+    });
+
+    // 3. Create a downloadable Blob file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `ClassWeb_Message_Audit_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleClearAllMessages = async () => {
+    const confirmDelete = window.confirm("CRITICAL WARNING: Are you sure you want to PERMANENTLY delete ALL messages across the entire platform? This action cannot be undone.");
+    if (confirmDelete) {
+      try {
+        await api.delete('/admin/messages');
+        setMessages([]); // Instantly clear the UI
+        alert("Platform communication log has been completely wiped.");
+      } catch (err) {
+        alert("Failed to delete messages.");
+      }
+    }
+  };
   if (!user || user.role !== 'admin') return <div className="p-10 text-center text-red-600 font-bold mt-20">Access Denied. Master Admins Only.</div>;
   if (isLoading) return <div className="p-10 text-center mt-20 animate-pulse font-bold text-gray-800">Loading Master Control...</div>;
 
@@ -207,17 +249,70 @@ const StaffTab = ({ teachers, setTeachers }) => {
   );
 };
 
+// /* ==========================================
+//    3. NOTICEBOARD TAB (View All System Messages)
+//    ========================================== */
+// const NoticeboardTab = ({ messages }) => (
+//   <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fade-in max-w-4xl">
+//     <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+//       <Bell className="text-gray-900" /> Platform Communication Log
+//     </h2>
+//     <div className="space-y-4">
+//       {messages.length === 0 ? (
+//         <div className="p-8 text-center text-gray-500 bg-gray-50 border border-dashed rounded-xl">No messages found on the platform.</div>
+//       ) : (
+//         messages.map((msg) => (
+//           <div key={msg._id} className="bg-gray-50/50 rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+//             <div className="flex justify-between items-start mb-3 border-b border-gray-200 pb-3">
+//               <div className="flex items-center gap-3">
+//                 <div className={`h-10 w-10 text-white rounded-full flex items-center justify-center font-bold ${msg.sender?.role === 'admin' ? 'bg-gray-900' : 'bg-purple-600'}`}>
+//                   {msg.sender?.name ? msg.sender.name.charAt(0).toUpperCase() : 'U'}
+//                 </div>
+//                 <div>
+//                   <p className="font-bold text-gray-900">{msg.sender?.name || 'Unknown User'} <span className="text-xs font-normal text-gray-500">({msg.sender?.role})</span></p>
+//                   <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">Sent To: {msg.recipientGroup}</p>
+//                 </div>
+//               </div>
+//               <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-md border flex items-center gap-1">
+//                 <Clock size={12}/> {new Date(msg.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+//               </span>
+//             </div>
+//             <p className="text-gray-800 whitespace-pre-wrap">{msg.content}</p>
+//           </div>
+//         ))
+//       )}
+//     </div>
+//   </div>
+// );
 /* ==========================================
    3. NOTICEBOARD TAB (View All System Messages)
    ========================================== */
-const NoticeboardTab = ({ messages }) => (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fade-in max-w-4xl">
-    <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-      <Bell className="text-gray-900" /> Platform Communication Log
-    </h2>
+const NoticeboardTab = ({ messages, onExport, onClear }) => (
+  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fade-in max-w-5xl">
+    
+    {/* Noticeboard Header with Master Controls */}
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-gray-100 pb-4">
+      <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+        <Bell className="text-gray-900" /> Platform Communication Log
+      </h2>
+      
+      <div className="flex gap-2">
+        <button onClick={onExport} className="bg-green-50 text-green-700 border border-green-200 px-4 py-2 rounded-lg flex items-center gap-2 font-bold hover:bg-green-100 transition-colors shadow-sm">
+          <Download size={16} /> Export CSV
+        </button>
+        <button onClick={onClear} className="bg-red-50 text-red-700 border border-red-200 px-4 py-2 rounded-lg flex items-center gap-2 font-bold hover:bg-red-100 transition-colors shadow-sm">
+          <Trash2 size={16} /> Clear All Logs
+        </button>
+      </div>
+    </div>
+
     <div className="space-y-4">
       {messages.length === 0 ? (
-        <div className="p-8 text-center text-gray-500 bg-gray-50 border border-dashed rounded-xl">No messages found on the platform.</div>
+        <div className="p-12 text-center text-gray-500 bg-gray-50 border border-dashed rounded-xl">
+          <Bell size={40} className="mx-auto mb-4 text-gray-300" />
+          <p className="font-bold text-lg">Communication Log Empty</p>
+          <p className="text-sm mt-1">No messages found on the platform.</p>
+        </div>
       ) : (
         messages.map((msg) => (
           <div key={msg._id} className="bg-gray-50/50 rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
@@ -231,7 +326,7 @@ const NoticeboardTab = ({ messages }) => (
                   <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">Sent To: {msg.recipientGroup}</p>
                 </div>
               </div>
-              <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-md border flex items-center gap-1">
+              <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-md border flex items-center gap-1 shadow-sm">
                 <Clock size={12}/> {new Date(msg.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
