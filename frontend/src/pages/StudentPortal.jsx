@@ -4,7 +4,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 // Added Menu and X icons for the mobile dropdown
-import { BookOpen, Bell, CheckCircle, Clock, FileText, Check, X, Filter, Menu ,IndianRupee, printer} from 'lucide-react';
+import { BookOpen, Bell, CheckCircle, Clock, FileText, Check, X, Filter, Menu ,IndianRupee, Printer} from 'lucide-react';
 
 const StudentPortal = () => {
   const { user } = useContext(AuthContext);
