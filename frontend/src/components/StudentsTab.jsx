@@ -3,6 +3,13 @@ import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import { UserPlus, Search, Filter, Download, Trash2 } from 'lucide-react';
 
+// Master List of Standards - Ensures perfect database matches!
+export const STANDARD_OPTIONS = [
+  "1st Std", "2nd Std", "3rd Std", "4th Std", "5th Std", "6th Std", 
+  "7th Std", "8th Std", "9th Std", "10th Std", 
+  "11th Commerce", "12th Commerce", "11th Science", "12th Science"
+];
+
 const StudentsTab = () => {
   const { user: currentUser } = useContext(AuthContext);
   const [students, setStudents] = useState([]);
@@ -33,6 +40,8 @@ const StudentsTab = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.std) return alert("Please select a Standard from the dropdown.");
+    
     try {
       const res = await api.post('/students', formData);
       setStudents([...students, res.data]);
@@ -76,7 +85,8 @@ const StudentsTab = () => {
   };
 
   const filteredStudents = students.filter(student => {
-    const matchesStd = filterStd === 'All' || (student.std && student.std.includes(filterStd));
+    // Because we use a dropdown now, we can use exact matching (===) instead of .includes()
+    const matchesStd = filterStd === 'All' || student.std === filterStd; 
     const matchesBatch = filterBatch === 'All' || student.batch === filterBatch;
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStd && matchesBatch && matchesSearch;
@@ -85,7 +95,6 @@ const StudentsTab = () => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fade-in max-w-6xl mx-auto">
       
-      {/* --- UPDATED HEADER WITH EXPORT & DELETE --- */}
       <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
         <h2 className="text-xl font-bold text-gray-900">Student Management</h2>
         
@@ -114,7 +123,12 @@ const StudentsTab = () => {
             <input required type="password" placeholder="Temp Password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="p-2 border rounded outline-none focus:ring-2 focus:ring-blue-600" />
             <input type="text" placeholder="Phone Number" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="p-2 border rounded outline-none focus:ring-2 focus:ring-blue-600" />
             
-            <input type="text" placeholder="Standard (e.g. 10th)" value={formData.std} onChange={e => setFormData({...formData, std: e.target.value})} className="p-2 border rounded outline-none focus:ring-2 focus:ring-blue-600" />
+            {/* DROPDOWN FOR STANDARD */}
+            <select required value={formData.std} onChange={e => setFormData({...formData, std: e.target.value})} className="p-2 border rounded outline-none focus:ring-2 focus:ring-blue-600 bg-white font-medium">
+              <option value="" disabled>Select Standard...</option>
+              {STANDARD_OPTIONS.map(std => <option key={std} value={std}>{std}</option>)}
+            </select>
+
             <input type="text" placeholder="Blood Group" value={formData.bgroup} onChange={e => setFormData({...formData, bgroup: e.target.value})} className="p-2 border rounded outline-none focus:ring-2 focus:ring-blue-600" />
             
             <select value={formData.batch} onChange={e => setFormData({...formData, batch: e.target.value})} className="p-2 border rounded col-span-1 md:col-span-2 outline-none focus:ring-2 focus:ring-blue-600">
@@ -126,7 +140,6 @@ const StudentsTab = () => {
         </form>
       )}
 
-      {/* --- FILTERS --- */}
       <div className="flex flex-col md:flex-row gap-4 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
         <div className="flex-1 flex items-center bg-white border rounded px-3 py-2 shadow-sm">
           <Search size={18} className="text-gray-400 mr-2" />
@@ -135,14 +148,14 @@ const StudentsTab = () => {
         
         <div className="flex items-center gap-2">
           <Filter size={18} className="text-gray-500" />
-          <input 
-            type="text" 
-            placeholder="Filter Standard" 
-            value={filterStd === 'All' ? '' : filterStd} 
-            onChange={e => setFilterStd(e.target.value || 'All')} 
-            className="p-2 border rounded outline-none bg-white w-40" 
-          />
-          <select value={filterBatch} onChange={e => setFilterBatch(e.target.value)} className="p-2 border rounded outline-none bg-white">
+          
+          {/* DROPDOWN FOR FILTERING */}
+          <select value={filterStd} onChange={e => setFilterStd(e.target.value)} className="p-2 border rounded outline-none bg-white w-48 font-medium shadow-sm">
+            <option value="All">All Standards</option>
+            {STANDARD_OPTIONS.map(std => <option key={std} value={std}>{std}</option>)}
+          </select>
+
+          <select value={filterBatch} onChange={e => setFilterBatch(e.target.value)} className="p-2 border rounded outline-none bg-white font-medium shadow-sm">
             <option value="All">All Batches</option>
             <option value="Morning">Morning</option>
             <option value="Evening">Evening</option>
@@ -150,7 +163,6 @@ const StudentsTab = () => {
         </div>
       </div>
 
-      {/* --- TABLE --- */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -162,7 +174,7 @@ const StudentsTab = () => {
           </thead>
           <tbody>
             {filteredStudents.length === 0 ? (
-              <tr><td colSpan="3" className="p-8 text-center text-gray-500">No students found.</td></tr>
+              <tr><td colSpan="3" className="p-8 text-center text-gray-500">No students match your filters.</td></tr>
             ) : (
               filteredStudents.map(student => (
                 <tr key={student._id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">

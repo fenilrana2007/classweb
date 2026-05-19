@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { FileText, Plus, Download, Trash2, Edit3, TrendingUp, CheckCircle, XCircle } from 'lucide-react';
+// Import the shared array so it always perfectly matches the student registration
+import { STANDARD_OPTIONS } from './StudentsTab'; 
 
 const ExamsTab = () => {
   const [exams, setExams] = useState([]);
   const [students, setStudents] = useState([]);
   
-  // View Modes: 'list' | 'create' | 'grade' | 'viewResults'
   const [viewMode, setViewMode] = useState('list');
   const [selectedExam, setSelectedExam] = useState(null);
   
-  // Forms & Filters
-  const [formData, setFormData] = useState({ name: '', std: '10th Std', batch: 'All', maxMarks: 100, examDate: '' });
+  // Set default to the first option in the array to prevent blank errors
+  const [formData, setFormData] = useState({ name: '', std: STANDARD_OPTIONS[9], batch: 'All', maxMarks: 100, examDate: '' });
   const [filterStd, setFilterStd] = useState('All');
-  const [sortOrder, setSortOrder] = useState('desc'); // 'desc' or 'asc'
+  const [sortOrder, setSortOrder] = useState('desc');
 
-  // Temporary state for entering marks
   const [marksInput, setMarksInput] = useState({});
 
   useEffect(() => {
@@ -33,9 +33,9 @@ const ExamsTab = () => {
     catch (err) { console.error(err); }
   };
 
-  // --- CRUD: CREATE EXAM ---
   const handleCreateExam = async (e) => {
     e.preventDefault();
+    if (!formData.std) return alert("Please select a standard.");
     try {
       const res = await api.post('/exams', formData);
       setExams([res.data, ...exams]);
@@ -44,7 +44,6 @@ const ExamsTab = () => {
     } catch (err) { alert("Failed to create exam"); }
   };
 
-  // --- SAFE DELETE & EXPORT ---
   const exportExamToCSV = (exam) => {
     let csv = `Exam Name,${exam.name}\nStandard,${exam.std}\nMax Marks,${exam.maxMarks}\n\nStudent Name,Obtained Marks,Status,Percentage\n`;
     
@@ -65,9 +64,9 @@ const ExamsTab = () => {
   };
 
   const handleDeleteExam = async (exam) => {
-    const confirm = window.confirm(`CRITICAL: You are about to delete the exam "${exam.name}".\n\nClicking OK will automatically download a backup CSV of the marks and permanently delete the exam from the database.`);
+    const confirm = window.confirm(`CRITICAL: You are about to delete the exam "${exam.name}".\n\nClicking OK will automatically download a backup CSV of the marks and permanently delete the exam.`);
     if (confirm) {
-      exportExamToCSV(exam); // Auto-backup!
+      exportExamToCSV(exam);
       try {
         await api.delete(`/exams/${exam._id}`);
         setExams(exams.filter(e => e._id !== exam._id));
@@ -76,15 +75,13 @@ const ExamsTab = () => {
     }
   };
 
-  // --- GRADING SYSTEM ---
   const openGradeMode = (exam) => {
     setSelectedExam(exam);
-    // Filter students eligible for this exam
+    // Because both Students and Exams use the Dropdown, this === match is perfectly accurate now!
     const eligibleStudents = students.filter(s => 
       s.std === exam.std && (exam.batch === 'All' || s.batch === exam.batch)
     );
     
-    // Pre-fill existing marks if editing
     const initialMarks = {};
     eligibleStudents.forEach(student => {
       const existingRecord = exam.marks.find(m => m.studentId?._id === student._id);
@@ -99,7 +96,6 @@ const ExamsTab = () => {
   };
 
   const handleSaveMarks = async () => {
-    // Convert state object to array for backend
     const marksArray = Object.keys(marksInput).map(studentId => ({
       studentId,
       obtainedMarks: Number(marksInput[studentId].obtainedMarks) || 0,
@@ -114,13 +110,11 @@ const ExamsTab = () => {
     } catch (err) { alert("Failed to save marks."); }
   };
 
-  // --- RENDER HELPERS ---
   const filteredExams = exams.filter(e => filterStd === 'All' || e.std === filterStd);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fade-in max-w-6xl mx-auto">
       
-      {/* Dynamic Header */}
       <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
         <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
           <FileText className="text-blue-600" /> 
@@ -141,16 +135,13 @@ const ExamsTab = () => {
         )}
       </div>
 
-      {/* MODE 1: LIST EXAMS */}
       {viewMode === 'list' && (
         <>
           <div className="flex gap-4 mb-4">
+            {/* EXAM FILTER DROPDOWN */}
             <select value={filterStd} onChange={e => setFilterStd(e.target.value)} className="p-2 border rounded-lg outline-none bg-gray-50 font-bold">
               <option value="All">Filter: All Standards</option>
-              <option value="9th Std">9th Std</option>
-              <option value="10th Std">10th Std</option>
-              <option value="11th Commerce">11th Commerce</option>
-              <option value="12th Commerce">12th Commerce</option>
+              {STANDARD_OPTIONS.map(std => <option key={std} value={std}>{std}</option>)}
             </select>
           </div>
           
@@ -175,12 +166,18 @@ const ExamsTab = () => {
         </>
       )}
 
-      {/* MODE 2: CREATE EXAM FORM */}
       {viewMode === 'create' && (
         <form onSubmit={handleCreateExam} className="max-w-2xl bg-gray-50 p-6 rounded-xl border border-gray-200">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div className="col-span-2"><label className="font-bold text-sm text-gray-700">Exam Name</label><input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-2 border rounded mt-1" placeholder="e.g., Mid-Term Mathematics" /></div>
-            <div><label className="font-bold text-sm text-gray-700">Standard</label><input required type="text" value={formData.std} onChange={e => setFormData({...formData, std: e.target.value})} className="w-full p-2 border rounded mt-1" /></div>
+            
+            {/* CREATE EXAM STANDARD DROPDOWN */}
+            <div><label className="font-bold text-sm text-gray-700">Standard</label>
+              <select required value={formData.std} onChange={e => setFormData({...formData, std: e.target.value})} className="w-full p-2 border rounded mt-1 bg-white">
+                {STANDARD_OPTIONS.map(std => <option key={std} value={std}>{std}</option>)}
+              </select>
+            </div>
+            
             <div><label className="font-bold text-sm text-gray-700">Batch</label>
               <select value={formData.batch} onChange={e => setFormData({...formData, batch: e.target.value})} className="w-full p-2 border rounded mt-1">
                 <option value="All">All Batches</option><option value="Morning">Morning</option><option value="Evening">Evening</option>
@@ -193,7 +190,6 @@ const ExamsTab = () => {
         </form>
       )}
 
-      {/* MODE 3: ENTER MARKS */}
       {viewMode === 'grade' && (
         <div className="max-w-3xl">
           <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg mb-6 text-sm font-medium">
@@ -234,7 +230,6 @@ const ExamsTab = () => {
         </div>
       )}
 
-      {/* MODE 4: VIEW RESULTS & LEADERBOARD */}
       {viewMode === 'viewResults' && (
         <div>
           <div className="flex justify-between items-center mb-4 bg-gray-50 p-4 rounded-lg border">
@@ -243,10 +238,10 @@ const ExamsTab = () => {
               <p className="text-gray-500 text-sm font-bold">Max Marks: {selectedExam.maxMarks}</p>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')} className="bg-white border p-2 rounded text-sm font-bold">
+              <button onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')} className="bg-white border p-2 rounded text-sm font-bold shadow-sm hover:bg-gray-50">
                 Sort: {sortOrder === 'desc' ? 'Highest First' : 'Lowest First'}
               </button>
-              <button onClick={() => exportExamToCSV(selectedExam)} className="bg-green-600 text-white px-4 py-2 rounded text-sm font-bold flex items-center gap-2">
+              <button onClick={() => exportExamToCSV(selectedExam)} className="bg-green-600 text-white px-4 py-2 rounded text-sm font-bold flex items-center gap-2 hover:bg-green-700">
                 <Download size={14}/> Export CSV
               </button>
             </div>
@@ -261,7 +256,7 @@ const ExamsTab = () => {
                 [...selectedExam.marks].sort((a, b) => sortOrder === 'desc' ? b.obtainedMarks - a.obtainedMarks : a.obtainedMarks - b.obtainedMarks)
                 .map((mark, index) => {
                   const percentage = Math.round((mark.obtainedMarks / selectedExam.maxMarks) * 100);
-                  const isPass = percentage >= 35; // Standard passing criteria
+                  const isPass = percentage >= 35;
                   
                   return (
                     <tr key={index} className="border-b hover:bg-gray-50">
