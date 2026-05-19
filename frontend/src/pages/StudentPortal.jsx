@@ -1,5 +1,6 @@
 
 // export default StudentPortal;
+import html2pdf from 'html2pdf.js';
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
@@ -309,102 +310,59 @@ const MyFeesTab = () => {
   }, []);
 
   // --- THE RECEIPT GENERATOR ---
-  const handleDownloadReceipt = (receipt) => {
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
-    
-    // Calculate the date beautifully
+const handleDownloadReceipt = (receipt) => {
     const paymentDate = new Date(receipt.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     const paymentTime = new Date(receipt.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-    // Official Receipt HTML Layout
-    const receiptHTML = `
-      <html>
-        <head>
-          <title>Fee Receipt - ${user.name}</title>
-          <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #111827; max-width: 800px; margin: 0 auto; }
-            .header { text-align: center; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; }
-            .institute-name { font-size: 32px; font-weight: 900; color: #1e3a8a; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
-            .receipt-title { font-size: 18px; color: #4b5563; margin-top: 5px; font-weight: bold; letter-spacing: 2px; }
-            .date-box { text-align: right; margin-bottom: 20px; font-size: 14px; color: #6b7280; }
-            
-            .section-title { font-size: 14px; text-transform: uppercase; font-weight: bold; color: #2563eb; margin-bottom: 10px; margin-top: 30px;}
-            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-            th, td { border: 1px solid #e5e7eb; padding: 12px; text-align: left; font-size: 14px; }
-            th { background-color: #f9fafb; font-weight: bold; width: 35%; color: #4b5563; }
-            td { font-weight: 500; }
-            
-            .amount-row th, .amount-row td { font-size: 16px; color: #15803d; background-color: #f0fdf4; }
-            
-            .summary-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-top: 30px; }
-            .summary-flex { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
-            .summary-total { display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 2px dashed #cbd5e1; font-size: 18px; font-weight: bold; color: #b91c1c; }
-            
-            .footer { margin-top: 60px; display: flex; justify-content: space-between; font-size: 14px; color: #4b5563; }
-            .signature { text-align: center; }
-            .signature-line { width: 200px; border-bottom: 1px solid #111827; margin-bottom: 5px; }
-          </style>
-        </head>
-        <body>
-          
-          <div class="header">
-            <h1 class="institute-name">Unique Coaching Class</h1>
-            <p class="receipt-title">OFFICIAL FEE RECEIPT</p>
-          </div>
-
-          <div class="date-box">
-            <strong>Receipt ID:</strong> RCPT-${receipt._id.substring(18, 24).toUpperCase()}<br>
-            <strong>Date:</strong> ${paymentDate}<br>
-            <strong>Time:</strong> ${paymentTime}
-          </div>
-
-          <div class="section-title">Student Information</div>
-          <table>
-            <tr><th>Student Name</th><td>${user.name}</td></tr>
-            <tr><th>Standard / Batch</th><td>${user.std || 'N/A'}</td></tr>
-            <tr><th>Email Address</th><td>${user.email}</td></tr>
-            <tr><th>Phone Number</th><td>${user.phone || 'N/A'}</td></tr>
-          </table>
-
-          <div class="section-title">Transaction Details</div>
-          <table>
-            <tr><th>Paid By (Payer Name)</th><td>${receipt.paidBy}</td></tr>
-            <tr><th>Payment Mode</th><td>${receipt.paymentMode}</td></tr>
-            <tr><th>Processed By (Staff)</th><td>${receipt.receivedBy}</td></tr>
-            <tr class="amount-row"><th>Amount Paid Now</th><td>₹${receipt.amountPaid.toLocaleString()}</td></tr>
-          </table>
-
-          <div class="summary-box">
-            <div class="section-title" style="margin-top: 0;">Account Summary</div>
-            <div class="summary-flex"><span>Total Yearly Fee:</span> <strong>₹${feeData.totalFee.toLocaleString()}</strong></div>
-            <div class="summary-flex"><span>Total Amount Paid (To Date):</span> <strong style="color: #15803d;">₹${feeData.totalPaid.toLocaleString()}</strong></div>
-            <div class="summary-total"><span>Remaining Balance Due:</span> <span>₹${feeData.remainingDue.toLocaleString()}</span></div>
-          </div>
-
-          <div class="footer">
-            <div>
-              <p>Thank you for your payment.</p>
-              <p style="font-size: 12px; color: #9ca3af;">*This is a computer-generated receipt.</p>
-            </div>
-            <div class="signature">
-              <div class="signature-line"></div>
-              Authorized Signatory<br>
-              <strong>${receipt.receivedBy}</strong>
-            </div>
-          </div>
-
-        </body>
-      </html>
+    // 1. Create a hidden HTML element
+    const element = document.createElement('div');
+    element.innerHTML = `
+      <div style="font-family: Arial, sans-serif; padding: 40px; color: #111827; max-width: 800px; margin: 0 auto;">
+        <div style="text-align: center; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
+          <h1 style="font-size: 32px; font-weight: 900; color: #1e3a8a; margin: 0; text-transform: uppercase;">Unique Coaching Class</h1>
+          <p style="font-size: 18px; color: #4b5563; margin-top: 5px; font-weight: bold;">OFFICIAL FEE RECEIPT</p>
+        </div>
+        <div style="text-align: right; margin-bottom: 20px; font-size: 14px; color: #6b7280;">
+          <strong>Receipt ID:</strong> RCPT-${receipt._id.substring(18, 24).toUpperCase()}<br>
+          <strong>Date:</strong> ${paymentDate}<br>
+          <strong>Time:</strong> ${paymentTime}
+        </div>
+        <h3 style="color: #2563eb; text-transform: uppercase; margin-bottom: 10px;">Student Information</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr><th style="border: 1px solid #e5e7eb; padding: 10px; text-align: left; background: #f9fafb; width: 35%;">Student Name</th><td style="border: 1px solid #e5e7eb; padding: 10px;">${user.name}</td></tr>
+          <tr><th style="border: 1px solid #e5e7eb; padding: 10px; text-align: left; background: #f9fafb;">Standard / Batch</th><td style="border: 1px solid #e5e7eb; padding: 10px;">${user.std || 'N/A'}</td></tr>
+        </table>
+        <h3 style="color: #2563eb; text-transform: uppercase; margin-bottom: 10px;">Transaction Details</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr><th style="border: 1px solid #e5e7eb; padding: 10px; text-align: left; background: #f9fafb;">Paid By</th><td style="border: 1px solid #e5e7eb; padding: 10px;">${receipt.paidBy}</td></tr>
+          <tr><th style="border: 1px solid #e5e7eb; padding: 10px; text-align: left; background: #f9fafb;">Payment Mode</th><td style="border: 1px solid #e5e7eb; padding: 10px;">${receipt.paymentMode}</td></tr>
+          <tr><th style="border: 1px solid #e5e7eb; padding: 10px; text-align: left; background: #f9fafb;">Processed By</th><td style="border: 1px solid #e5e7eb; padding: 10px;">${receipt.receivedBy}</td></tr>
+          <tr><th style="border: 1px solid #e5e7eb; padding: 10px; text-align: left; background: #f0fdf4; color: #15803d; font-size: 16px;">Amount Paid Now</th><td style="border: 1px solid #e5e7eb; padding: 10px; background: #f0fdf4; color: #15803d; font-size: 16px; font-weight: bold;">₹${receipt.amountPaid.toLocaleString()}</td></tr>
+        </table>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-top: 30px;">
+          <h3 style="color: #2563eb; text-transform: uppercase; margin-top: 0; margin-bottom: 15px;">Account Summary</h3>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px;"><span>Total Yearly Fee:</span> <strong>₹${feeData.totalFee.toLocaleString()}</strong></div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px;"><span>Total Amount Paid (To Date):</span> <strong style="color: #15803d;">₹${feeData.totalPaid.toLocaleString()}</strong></div>
+          <div style="display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 2px dashed #cbd5e1; font-size: 18px; font-weight: bold; color: #b91c1c;"><span>Remaining Balance Due:</span> <span>₹${feeData.remainingDue.toLocaleString()}</span></div>
+        </div>
+        <div style="margin-top: 60px; display: flex; justify-content: space-between; font-size: 14px;">
+          <div><p>Thank you for your payment.</p><p style="font-size: 12px; color: #9ca3af;">*Computer-generated receipt.</p></div>
+          <div style="text-align: center;"><div style="width: 200px; border-bottom: 1px solid #111827; margin-bottom: 5px;"></div>Authorized Signatory<br><strong>${receipt.receivedBy}</strong></div>
+        </div>
+      </div>
     `;
 
-    printWindow.document.write(receiptHTML);
-    printWindow.document.close();
-    
-    // Add a slight delay to ensure CSS renders before the print dialog opens
-    setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-    }, 250);
+    // 2. Options for html2pdf
+    const opt = {
+      margin:       0.5,
+      filename:     `Fee_Receipt_${receipt._id.substring(18, 24)}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+
+    // 3. Generate and instantly download! (No print screen!)
+    html2pdf().set(opt).from(element).save();
   };
 
   if (!feeData) return <div className="p-8 text-center animate-pulse text-gray-500 font-bold">Loading fee details...</div>;

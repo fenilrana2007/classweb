@@ -11,5 +11,7 @@ router.get('/all-payments', protect, getAllPayments);
 
 // Student Route
 router.get('/my-status', protect, getMyFeeStatus);
-
+// Add these to the Admin Routes section:
+router.put('/pay/:id', protect, updatePayment);
+router.delete('/pay/:id', protect, deletePayment);
 module.exports = router;

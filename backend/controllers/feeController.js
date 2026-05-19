@@ -70,5 +70,23 @@ const getMyFeeStatus = async (req, res) => {
         res.json({ totalFee, totalPaid, remainingDue, history: receipts });
     } catch (error) { res.status(500).json({ message: 'Error fetching student fees' }); }
 };
+// ==========================================
+// ADMIN: Update & Delete Payments
+// ==========================================
+const updatePayment = async (req, res) => {
+    try {
+        const receipt = await FeeReceipt.findByIdAndUpdate(req.params.id, req.body, { new: true })
+            .populate('studentId', 'name std batch email phone');
+        res.json(receipt);
+    } catch (error) { res.status(500).json({ message: 'Error updating payment' }); }
+};
 
-module.exports = { setFeeStructure, getFeeStructure, recordPayment, getAllPayments, getMyFeeStatus };
+const deletePayment = async (req, res) => {
+    try {
+        await FeeReceipt.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Payment deleted successfully' });
+    } catch (error) { res.status(500).json({ message: 'Error deleting payment' }); }
+};
+
+// Update your module.exports to include them:
+module.exports = { setFeeStructure, getFeeStructure, recordPayment, getAllPayments, getMyFeeStatus, updatePayment, deletePayment };
