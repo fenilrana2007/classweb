@@ -83,7 +83,7 @@ app.use('/api/student', require('./routes/studentRoutes'));
 app.get('/api/health', (req, res) => {
     res.status(200).json({ message: 'LMS API is running smoothly.' });
 });
-
+app.use('/api/exams', require('./routes/examRoutes'));
 // --- SERVER START ---
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

@@ -6,6 +6,7 @@ import {
   ShieldCheck, Users, LayoutDashboard, UserPlus, 
   Ban, Edit, Trash2, Send, Bell, Clock, Download
 } from 'lucide-react';
+import ExamsTab from '../components/ExamsTab'
 import StudentsTab from '../components/StudentsTab';
 // Make sure you also import 'GraduationCap' or 'Book' from lucide-react for the icon!
 import { GraduationCap } from 'lucide-react';
@@ -108,6 +109,7 @@ const AdminPortal = () => {
         <TabButton active={activeTab === 'noticeboard'} onClick={() => setActiveTab('noticeboard')} icon={<Bell size={18} />} text="Noticeboard" />
         <TabButton active={activeTab === 'broadcast'} onClick={() => setActiveTab('broadcast')} icon={<Send size={18} />} text="Broadcast" />
         <TabButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<GraduationCap size={18} />} text="Manage Students" />
+        <TabButton active={activeTab === 'exams'} onClick={() => setActiveTab('exams')} icon={<FileText size={18} />} text="Examinations" />
       </div>
 
       {/* Tab Contents */}
@@ -116,6 +118,8 @@ const AdminPortal = () => {
       {activeTab === 'noticeboard' && <NoticeboardTab messages={messages} onExport={handleExportMessages} onClear={handleClearAllMessages}/>}
       {activeTab === 'broadcast' && <BroadcastTab messages={messages} setMessages={setMessages} user={user} />}
       {activeTab === 'students' && <StudentsTab />} {/* This is the new StudentsTab component we created! */}
+      {activeTab === 'exams' && <ExamsTab />} {/* This is the new ExamsTab component we created! */}
+
     </div>
   );
 };

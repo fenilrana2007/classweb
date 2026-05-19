@@ -7,7 +7,7 @@ import {
   Send, Bell, Clock, GraduationCap 
 } from 'lucide-react';
 import StudentsTab from '../components/StudentsTab'; // <--- The correct imported component
-
+import ExamsTab from '../components/ExamsTab';
 const standardOptions = [
   "1st Std", "2nd Std", "3rd Std", "4th Std", "5th Std", "6th Std", 
   "7th Std", "8th Std", "9th Std", "10th Std", "11th Commerce", "12th Commerce"
@@ -70,6 +70,7 @@ const TeacherPortal = () => {
         <TabButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<GraduationCap size={18} />} text="Manage Students" />
         <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckSquare size={18} />} text="Attendance" />
         <TabButton active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} icon={<MessageSquare size={18} />} text="Broadcast" />
+        <TabButton active={activeTab === 'exams'} onClick={() => setActiveTab('exams')} icon={<FileText size={18} />} text="Examinations" />
       </div>
 
       {/* Content Rendering - Fixed duplicates here */}
@@ -77,7 +78,7 @@ const TeacherPortal = () => {
       {activeTab === 'students' && <StudentsTab />} 
       {activeTab === 'attendance' && <AttendanceTab students={students} />}
       {activeTab === 'messages' && <MessagesTab messages={messages} setMessages={setMessages} user={user} />}
-      
+      {activeTab === 'exams' && <ExamsTab />}
     </div>
   );
 };
