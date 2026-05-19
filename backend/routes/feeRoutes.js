@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { setFeeStructure, getFeeStructure, recordPayment, getAllPayments, getMyFeeStatus } = require('../controllers/feeController');
+const { setFeeStructure, getFeeStructure, recordPayment, getAllPayments, getMyFeeStatus,updatePayment,deletePayment } = require('../controllers/feeController');
 const { protect } = require('../middlewares/authMiddleware');
 
 // Admin Routes (You can add admin middleware here later)
