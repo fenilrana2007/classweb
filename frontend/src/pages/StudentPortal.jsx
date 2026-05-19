@@ -292,7 +292,6 @@ const ExamsTab = ({ exams }) => {
 /* ==========================================
    4. MY FEES TAB (With Official Receipts)
    ========================================== */
-import { Printer } from 'lucide-react'; // Make sure to add Printer to your lucide-react imports at the top!
 
 const MyFeesTab = () => {
   const { user } = useContext(AuthContext); // Get student details for the receipt
