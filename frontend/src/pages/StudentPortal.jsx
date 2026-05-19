@@ -1,17 +1,16 @@
-// src/pages/StudentPortal.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
-import { BookOpen, Bell, CheckCircle, Clock } from 'lucide-react';
+import { BookOpen, Bell, CheckCircle, Clock, FileText, Check, X, Filter } from 'lucide-react';
 
 const StudentPortal = () => {
   const { user } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('noticeboard');
   
-  // Strictly tied to database data only
   const [dashboardData, setDashboardData] = useState({
     messages: [],
-    attendance: []
+    attendance: [],
+    exams: [] // New exam data array
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -19,10 +18,10 @@ const StudentPortal = () => {
     const fetchData = async () => {
       try {
         const res = await api.get('/student/dashboard');
-        // We ensure we only set what the database returns
         setDashboardData({
           messages: res.data.messages || [],
-          attendance: res.data.attendance || []
+          attendance: res.data.attendance || [],
+          exams: res.data.exams || []
         });
       } catch (error) {
         console.error("Failed to load student data", error);
@@ -43,21 +42,16 @@ const StudentPortal = () => {
     );
   }
 
-  if (isLoading) {
-    return <div className="p-10 text-center mt-20 animate-pulse font-bold text-blue-600">Loading your workspace...</div>;
-  }
+  if (isLoading) return <div className="p-10 text-center mt-20 animate-pulse font-bold text-blue-600">Loading your workspace...</div>;
 
-  // Consistent Database-driven Attendance Calculation
   const totalClasses = dashboardData.attendance.length;
   const presentClasses = dashboardData.attendance.filter(a => a.status === 'Present').length;
-  
-  // If no classes exist yet, default to 100%, otherwise calculate the real percentage
   const attendancePercentage = totalClasses === 0 ? 100 : Math.round((presentClasses / totalClasses) * 100);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       
-      {/* Student Header (Blue Theme) */}
+      {/* Student Header */}
       <div className="bg-blue-600 rounded-2xl p-8 text-white shadow-lg mb-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
         <div className="flex justify-between items-center">
           <div>
@@ -66,30 +60,22 @@ const StudentPortal = () => {
           </div>
           <div className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-lg border border-white/30 flex items-center gap-2">
             <BookOpen size={18} />
-            <span className="font-bold uppercase tracking-wider text-sm">Student</span>
+            <span className="font-bold uppercase tracking-wider text-sm">Std: {user.std || 'Student'}</span>
           </div>
         </div>
       </div>
 
-      {/* Navigation Tabs (Removed Schedule) */}
+      {/* Navigation Tabs */}
       <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-200 pb-4">
-        <TabButton 
-          active={activeTab === 'noticeboard'} 
-          onClick={() => setActiveTab('noticeboard')} 
-          icon={<Bell size={18} />} 
-          text="Noticeboard" 
-        />
-        <TabButton 
-          active={activeTab === 'attendance'} 
-          onClick={() => setActiveTab('attendance')} 
-          icon={<CheckCircle size={18} />} 
-          text="My Attendance" 
-        />
+        <TabButton active={activeTab === 'noticeboard'} onClick={() => setActiveTab('noticeboard')} icon={<Bell size={18} />} text="Noticeboard" />
+        <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckCircle size={18} />} text="My Attendance" />
+        <TabButton active={activeTab === 'exams'} onClick={() => setActiveTab('exams')} icon={<FileText size={18} />} text="My Results" />
       </div>
 
       {/* Tab Contents */}
       {activeTab === 'noticeboard' && <NoticeboardTab messages={dashboardData.messages} />}
       {activeTab === 'attendance' && <AttendanceTab attendance={dashboardData.attendance} percentage={attendancePercentage} />}
+      {activeTab === 'exams' && <ExamsTab exams={dashboardData.exams} />}
 
     </div>
   );
@@ -102,7 +88,7 @@ const TabButton = ({ active, onClick, icon, text }) => (
 );
 
 /* ==========================================
-   1. NOTICEBOARD TAB (Strictly Database Messages)
+   1. NOTICEBOARD TAB 
    ========================================== */
 const NoticeboardTab = ({ messages }) => (
   <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fade-in">
@@ -111,9 +97,7 @@ const NoticeboardTab = ({ messages }) => (
     </h2>
     <div className="space-y-4">
       {messages.length === 0 ? (
-        <div className="p-8 text-center text-gray-500 bg-gray-50 border border-dashed rounded-xl">
-          No new announcements from the faculty.
-        </div>
+        <div className="p-8 text-center text-gray-500 bg-gray-50 border border-dashed rounded-xl">No new announcements from the faculty.</div>
       ) : (
         messages.map((msg) => (
           <div key={msg._id} className="bg-blue-50/50 rounded-xl border border-blue-100 p-5 hover:border-blue-300 transition-colors">
@@ -140,12 +124,10 @@ const NoticeboardTab = ({ messages }) => (
 );
 
 /* ==========================================
-   2. ATTENDANCE TAB (Strictly Database Records)
+   2. ATTENDANCE TAB
    ========================================== */
 const AttendanceTab = ({ attendance, percentage }) => (
   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in">
-    
-    {/* Stats Card */}
     <div className="col-span-1 space-y-6">
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
         <h3 className="text-gray-500 font-bold mb-4">Overall Attendance</h3>
@@ -158,50 +140,131 @@ const AttendanceTab = ({ attendance, percentage }) => (
           </svg>
           <span className="absolute text-3xl font-bold text-gray-900">{attendance.length === 0 ? 'N/A' : `${percentage}%`}</span>
         </div>
-        <p className="mt-4 text-sm font-medium text-gray-500">
-          {attendance.length === 0 
-            ? "No attendance records taken yet." 
-            : percentage >= 75 
-              ? "You are doing great! Keep it up." 
-              : "Your attendance is low. Try not to miss classes!"}
-        </p>
       </div>
     </div>
 
-    {/* History List */}
     <div className="col-span-1 md:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-        <CheckCircle className="text-blue-600" /> My Attendance History
-      </h2>
+      <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2"><CheckCircle className="text-blue-600" /> My Attendance History</h2>
       <div className="overflow-x-auto border border-gray-100 rounded-xl">
         <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-100"><th className="p-4 text-sm text-gray-500">Date</th><th className="p-4 text-sm text-gray-500">Status</th></tr>
-          </thead>
+          <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="p-4 text-sm text-gray-500">Date</th><th className="p-4 text-sm text-gray-500">Status</th></tr></thead>
           <tbody>
-            {attendance.length === 0 ? (
-              <tr><td colSpan="2" className="p-8 text-center text-gray-500 bg-gray-50/50">No database records found yet.</td></tr>
-            ) : (
+            {attendance.length === 0 ? <tr><td colSpan="2" className="p-8 text-center text-gray-500">No records found.</td></tr> : 
               attendance.map((record, index) => (
                 <tr key={index} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
-                  <td className="p-4 font-bold text-gray-900">
-                    {/* Reliable date formatting to prevent timezone inconsistencies */}
-                    {new Date(record.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
-                  </td>
-                  <td className="p-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${record.status === 'Present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {record.status}
-                    </span>
-                  </td>
+                  <td className="p-4 font-bold text-gray-900">{new Date(record.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                  <td className="p-4"><span className={`px-3 py-1 rounded-full text-xs font-bold ${record.status === 'Present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{record.status}</span></td>
                 </tr>
               ))
-            )}
+            }
           </tbody>
         </table>
       </div>
     </div>
-
   </div>
 );
+
+/* ==========================================
+   3. EXAMS & RESULTS TAB
+   ========================================== */
+const ExamsTab = ({ exams }) => {
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [filterMonth, setFilterMonth] = useState('All');
+  const [sortDate, setSortDate] = useState('desc'); // 'desc' = Newest First
+
+  // Generate unique months for the dropdown filter based on the student's exams
+  const availableMonths = [...new Set(exams.map(e => {
+    const d = new Date(e.examDate);
+    return `${d.toLocaleString('default', { month: 'long' })} ${d.getFullYear()}`;
+  }))];
+
+  // Apply Filters & Sorting
+  const processedExams = exams.filter(exam => {
+    const examMonthYear = `${new Date(exam.examDate).toLocaleString('default', { month: 'long' })} ${new Date(exam.examDate).getFullYear()}`;
+    
+    const matchesStatus = filterStatus === 'All' || exam.status === filterStatus;
+    const matchesMonth = filterMonth === 'All' || examMonthYear === filterMonth;
+    
+    return matchesStatus && matchesMonth;
+  }).sort((a, b) => {
+    return sortDate === 'desc' 
+      ? new Date(b.examDate) - new Date(a.examDate) 
+      : new Date(a.examDate) - new Date(b.examDate);
+  });
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fade-in">
+      <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+        <FileText className="text-blue-600" /> Academic Performance
+      </h2>
+
+      {/* FILTERING CONTROLS */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+        <div className="flex items-center gap-2">
+          <Filter size={18} className="text-gray-500" />
+          
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="p-2 border rounded outline-none bg-white font-medium shadow-sm w-32">
+            <option value="All">All Results</option>
+            <option value="Pass">Passed</option>
+            <option value="Fail">Failed</option>
+            <option value="Absent">Absent</option>
+          </select>
+
+          <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="p-2 border rounded outline-none bg-white font-medium shadow-sm w-40">
+            <option value="All">All Months</option>
+            {availableMonths.map(month => <option key={month} value={month}>{month}</option>)}
+          </select>
+
+          <button onClick={() => setSortDate(sortDate === 'desc' ? 'asc' : 'desc')} className="p-2 border rounded bg-white font-medium shadow-sm ml-auto md:ml-4 hover:bg-gray-100">
+            {sortDate === 'desc' ? 'Sort: Newest First' : 'Sort: Oldest First'}
+          </button>
+        </div>
+      </div>
+
+      {/* EXAM LIST */}
+      <div className="space-y-4">
+        {processedExams.length === 0 ? (
+          <div className="p-8 text-center text-gray-500 bg-gray-50 border border-dashed rounded-xl">
+            No exams match your filters, or no marks have been recorded yet.
+          </div>
+        ) : (
+          processedExams.map((exam) => (
+            <div key={exam._id} className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              
+              <div>
+                <h3 className="font-bold text-lg text-gray-900">{exam.name}</h3>
+                <p className="text-sm text-gray-500 flex items-center gap-2">
+                  <Clock size={14}/> {new Date(exam.examDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-6 bg-gray-50 p-3 rounded-lg border border-gray-100 w-full md:w-auto justify-between">
+                <div className="text-center">
+                  <p className="text-xs font-bold text-gray-500 uppercase">Marks</p>
+                  <p className="font-bold text-xl text-gray-900">
+                    {exam.isAbsent ? 'AB' : exam.obtainedMarks} <span className="text-sm font-normal text-gray-500">/ {exam.maxMarks}</span>
+                  </p>
+                </div>
+                
+                <div className="text-center border-l border-gray-200 pl-6">
+                  <p className="text-xs font-bold text-gray-500 uppercase">Score</p>
+                  <p className="font-bold text-xl text-blue-600">{exam.percentage}%</p>
+                </div>
+
+                <div className="text-center border-l border-gray-200 pl-6">
+                  <p className="text-xs font-bold text-gray-500 uppercase">Result</p>
+                  {exam.status === 'Pass' ? <span className="text-green-600 font-bold flex items-center gap-1"><Check size={16}/> Pass</span> :
+                   exam.status === 'Fail' ? <span className="text-red-500 font-bold flex items-center gap-1"><X size={16}/> Fail</span> :
+                   <span className="text-orange-500 font-bold flex items-center gap-1"><X size={16}/> Absent</span>}
+                </div>
+              </div>
+              
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default StudentPortal;
