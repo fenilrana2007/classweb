@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { FileText, Plus, Download, Trash2, Edit3, TrendingUp, CheckCircle, XCircle } from 'lucide-react';
-// Import the shared array so it always perfectly matches the student registration
 import { STANDARD_OPTIONS } from './StudentsTab'; 
 
 const ExamsTab = () => {
@@ -11,8 +10,8 @@ const ExamsTab = () => {
   const [viewMode, setViewMode] = useState('list');
   const [selectedExam, setSelectedExam] = useState(null);
   
-  // Set default to the first option in the array to prevent blank errors
-  const [formData, setFormData] = useState({ name: '', std: STANDARD_OPTIONS[9], batch: 'All', maxMarks: 100, examDate: '' });
+  // Added minPassMarks to the default form state
+  const [formData, setFormData] = useState({ name: '', std: STANDARD_OPTIONS[9], batch: 'All', maxMarks: 100, minPassMarks: 35, examDate: '' });
   const [filterStd, setFilterStd] = useState('All');
   const [sortOrder, setSortOrder] = useState('desc');
 
@@ -36,20 +35,24 @@ const ExamsTab = () => {
   const handleCreateExam = async (e) => {
     e.preventDefault();
     if (!formData.std) return alert("Please select a standard.");
+    if (Number(formData.minPassMarks) > Number(formData.maxMarks)) return alert("Passing marks cannot be higher than Maximum marks!");
+
     try {
       const res = await api.post('/exams', formData);
       setExams([res.data, ...exams]);
       alert("Exam Created! You can now add marks.");
       setViewMode('list');
+      // Reset form
+      setFormData({ name: '', std: STANDARD_OPTIONS[9], batch: 'All', maxMarks: 100, minPassMarks: 35, examDate: '' });
     } catch (err) { alert("Failed to create exam"); }
   };
 
   const exportExamToCSV = (exam) => {
-    let csv = `Exam Name,${exam.name}\nStandard,${exam.std}\nMax Marks,${exam.maxMarks}\n\nStudent Name,Obtained Marks,Status,Percentage\n`;
+    let csv = `Exam Name,${exam.name}\nStandard,${exam.std}\nMax Marks,${exam.maxMarks}\nPassing Marks,${exam.minPassMarks}\n\nStudent Name,Obtained Marks,Status,Percentage\n`;
     
     exam.marks.forEach(m => {
       const name = m.studentId?.name || 'Unknown';
-      const status = m.isAbsent ? 'Absent' : 'Present';
+      const status = m.isAbsent ? 'Absent' : (m.obtainedMarks >= exam.minPassMarks ? 'Pass' : 'Fail');
       const percentage = m.isAbsent ? 0 : Math.round((m.obtainedMarks / exam.maxMarks) * 100);
       csv += `"${name}","${m.obtainedMarks || 0}","${status}","${percentage}%"\n`;
     });
@@ -77,7 +80,6 @@ const ExamsTab = () => {
 
   const openGradeMode = (exam) => {
     setSelectedExam(exam);
-    // Because both Students and Exams use the Dropdown, this === match is perfectly accurate now!
     const eligibleStudents = students.filter(s => 
       s.std === exam.std && (exam.batch === 'All' || s.batch === exam.batch)
     );
@@ -93,6 +95,21 @@ const ExamsTab = () => {
     
     setMarksInput(initialMarks);
     setViewMode('grade');
+  };
+
+  // --- STRICT INPUT VALIDATION FUNCTION ---
+  const handleMarksChange = (studentId, value, maxAllowed) => {
+    let val = value;
+    if (val !== '') {
+      val = Number(val);
+      if (val < 0) val = 0; // Prevent negative numbers
+      if (val > maxAllowed) val = maxAllowed; // Prevent exceeding max marks
+    }
+    
+    setMarksInput({
+      ...marksInput, 
+      [studentId]: { ...marksInput[studentId], obtainedMarks: val }
+    });
   };
 
   const handleSaveMarks = async () => {
@@ -138,7 +155,6 @@ const ExamsTab = () => {
       {viewMode === 'list' && (
         <>
           <div className="flex gap-4 mb-4">
-            {/* EXAM FILTER DROPDOWN */}
             <select value={filterStd} onChange={e => setFilterStd(e.target.value)} className="p-2 border rounded-lg outline-none bg-gray-50 font-bold">
               <option value="All">Filter: All Standards</option>
               {STANDARD_OPTIONS.map(std => <option key={std} value={std}>{std}</option>)}
@@ -152,7 +168,10 @@ const ExamsTab = () => {
                   <h3 className="font-bold text-lg text-gray-900">{exam.name}</h3>
                   <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded">{exam.std}</span>
                 </div>
-                <p className="text-sm text-gray-600 mb-4">Max Marks: {exam.maxMarks} • {new Date(exam.examDate).toLocaleDateString()}</p>
+                <p className="text-sm text-gray-600 mb-4">
+                  Max Marks: {exam.maxMarks} • Pass: {exam.minPassMarks || 35}<br/>
+                  <span className="text-xs">{new Date(exam.examDate).toLocaleDateString()}</span>
+                </p>
                 
                 <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
                   <button onClick={() => openGradeMode(exam)} className="flex-1 bg-green-50 text-green-700 p-2 rounded text-sm font-bold flex justify-center items-center gap-1 hover:bg-green-100"><Edit3 size={14}/> Edit Marks</button>
@@ -171,7 +190,6 @@ const ExamsTab = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div className="col-span-2"><label className="font-bold text-sm text-gray-700">Exam Name</label><input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-2 border rounded mt-1" placeholder="e.g., Mid-Term Mathematics" /></div>
             
-            {/* CREATE EXAM STANDARD DROPDOWN */}
             <div><label className="font-bold text-sm text-gray-700">Standard</label>
               <select required value={formData.std} onChange={e => setFormData({...formData, std: e.target.value})} className="w-full p-2 border rounded mt-1 bg-white">
                 {STANDARD_OPTIONS.map(std => <option key={std} value={std}>{std}</option>)}
@@ -183,8 +201,13 @@ const ExamsTab = () => {
                 <option value="All">All Batches</option><option value="Morning">Morning</option><option value="Evening">Evening</option>
               </select>
             </div>
-            <div><label className="font-bold text-sm text-gray-700">Max Marks</label><input required type="number" value={formData.maxMarks} onChange={e => setFormData({...formData, maxMarks: e.target.value})} className="w-full p-2 border rounded mt-1" /></div>
-            <div><label className="font-bold text-sm text-gray-700">Exam Date</label><input required type="date" value={formData.examDate} onChange={e => setFormData({...formData, examDate: e.target.value})} className="w-full p-2 border rounded mt-1" /></div>
+
+            <div><label className="font-bold text-sm text-gray-700">Max Marks</label><input required type="number" min="1" value={formData.maxMarks} onChange={e => setFormData({...formData, maxMarks: e.target.value})} className="w-full p-2 border rounded mt-1" /></div>
+            
+            {/* NEW MIN PASS MARKS INPUT */}
+            <div><label className="font-bold text-sm text-gray-700">Min Passing Marks</label><input required type="number" min="0" value={formData.minPassMarks} onChange={e => setFormData({...formData, minPassMarks: e.target.value})} className="w-full p-2 border rounded mt-1" /></div>
+            
+            <div className="col-span-2 md:col-span-1"><label className="font-bold text-sm text-gray-700">Exam Date</label><input required type="date" value={formData.examDate} onChange={e => setFormData({...formData, examDate: e.target.value})} className="w-full p-2 border rounded mt-1" /></div>
           </div>
           <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700">Save Exam & Continue</button>
         </form>
@@ -193,7 +216,7 @@ const ExamsTab = () => {
       {viewMode === 'grade' && (
         <div className="max-w-3xl">
           <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg mb-6 text-sm font-medium">
-            Entering marks for <b>{selectedExam.std}</b>. Students marked "Absent" will receive 0 marks.
+            Entering marks for <b>{selectedExam.std}</b>. Max marks allowed: <b>{selectedExam.maxMarks}</b>.
           </div>
           
           <table className="w-full text-left border-collapse mb-6">
@@ -207,10 +230,11 @@ const ExamsTab = () => {
                   <td className="p-3">
                     <input 
                       type="number" 
+                      min="0"
                       max={selectedExam.maxMarks}
                       disabled={marksInput[student._id]?.isAbsent}
-                      value={marksInput[student._id]?.obtainedMarks || ''} 
-                      onChange={(e) => setMarksInput({...marksInput, [student._id]: {...marksInput[student._id], obtainedMarks: e.target.value}})}
+                      value={marksInput[student._id]?.obtainedMarks !== undefined ? marksInput[student._id]?.obtainedMarks : ''} 
+                      onChange={(e) => handleMarksChange(student._id, e.target.value, selectedExam.maxMarks)}
                       className="p-2 border rounded w-32 outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-200" 
                     />
                   </td>
@@ -235,7 +259,7 @@ const ExamsTab = () => {
           <div className="flex justify-between items-center mb-4 bg-gray-50 p-4 rounded-lg border">
             <div>
               <p className="text-gray-500 text-sm font-bold">Total Appeared: {selectedExam.marks.length}</p>
-              <p className="text-gray-500 text-sm font-bold">Max Marks: {selectedExam.maxMarks}</p>
+              <p className="text-gray-500 text-sm font-bold">Max Marks: {selectedExam.maxMarks} <span className="mx-2">|</span> Passing Marks: {selectedExam.minPassMarks || 35}</p>
             </div>
             <div className="flex gap-2">
               <button onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')} className="bg-white border p-2 rounded text-sm font-bold shadow-sm hover:bg-gray-50">
@@ -256,7 +280,10 @@ const ExamsTab = () => {
                 [...selectedExam.marks].sort((a, b) => sortOrder === 'desc' ? b.obtainedMarks - a.obtainedMarks : a.obtainedMarks - b.obtainedMarks)
                 .map((mark, index) => {
                   const percentage = Math.round((mark.obtainedMarks / selectedExam.maxMarks) * 100);
-                  const isPass = percentage >= 35;
+                  
+                  // NEW CUSTOM PASSING LOGIC
+                  const passThreshold = selectedExam.minPassMarks !== undefined ? selectedExam.minPassMarks : 35;
+                  const isPass = mark.obtainedMarks >= passThreshold;
                   
                   return (
                     <tr key={index} className="border-b hover:bg-gray-50">
