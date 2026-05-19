@@ -3,12 +3,14 @@ import api from '../services/api';
 import { IndianRupee, PlusCircle, Settings, History, CheckCircle } from 'lucide-react';
 import { STANDARD_OPTIONS } from './StudentsTab';
 
-const FeesTab = ({ students }) => {
-  const [viewMode, setViewMode] = useState('collect'); // 'collect', 'history', 'structure'
+// REMOVED { students } from props. It will fetch them itself now!
+const FeesTab = () => {
+  const [viewMode, setViewMode] = useState('collect');
   
   // States
   const [structures, setStructures] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [students, setStudents] = useState([]); // NEW: State to hold students
   
   // Fee Collection Form
   const [filterStd, setFilterStd] = useState('');
@@ -24,13 +26,18 @@ const FeesTab = ({ students }) => {
 
   const fetchData = async () => {
     try {
-      const [structRes, payRes] = await Promise.all([
+      // NEW: Fetch students at the exact same time as structures and payments
+      const [structRes, payRes, studentRes] = await Promise.all([
         api.get('/fees/structure'),
-        api.get('/fees/all-payments')
+        api.get('/fees/all-payments'),
+        api.get('/students') 
       ]);
       setStructures(structRes.data);
       setPayments(payRes.data);
-    } catch (err) { console.error("Error loading fee data"); }
+      setStudents(studentRes.data); // Save students to state
+    } catch (err) { 
+      console.error("Error loading fee data", err); 
+    }
   };
 
   // 1. Save Master Fee Structure
@@ -39,7 +46,7 @@ const FeesTab = ({ students }) => {
     try {
       await api.post('/fees/structure', structData);
       alert(`Master Fee for ${structData.std} updated successfully!`);
-      fetchData(); // Reload
+      fetchData(); 
     } catch (err) { alert("Failed to save fee structure"); }
   };
 
@@ -55,7 +62,7 @@ const FeesTab = ({ students }) => {
     } catch (err) { alert("Failed to record payment"); }
   };
 
-  // Filter students based on Admin's dropdown selection
+  // Filter students safely (it will use the state array we just fetched!)
   const eligibleStudents = students.filter(s => 
     (!filterStd || s.std === filterStd) && (!filterBatch || s.batch === filterBatch)
   );
