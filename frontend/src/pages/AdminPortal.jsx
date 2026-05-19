@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import { 
   ShieldCheck, Users, LayoutDashboard, UserPlus, 
-  Ban, Edit, Trash2, Send, Bell, Clock, Download
+  Ban, Edit, Trash2, Send, Bell, Clock, Download,FileText
 } from 'lucide-react';
 import ExamsTab from '../components/ExamsTab'
 import StudentsTab from '../components/StudentsTab';

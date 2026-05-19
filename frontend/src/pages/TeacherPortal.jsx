@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import { 
   BookOpen, LayoutDashboard, CheckSquare, MessageSquare, 
-  Send, Bell, Clock, GraduationCap 
+  Send, Bell, Clock, GraduationCap ,FileText
 } from 'lucide-react';
 import StudentsTab from '../components/StudentsTab'; // <--- The correct imported component
 import ExamsTab from '../components/ExamsTab';
