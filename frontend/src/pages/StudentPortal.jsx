@@ -1,16 +1,290 @@
+// import React, { useState, useEffect, useContext } from 'react';
+// import { AuthContext } from '../context/AuthContext';
+// import api from '../services/api';
+// import { BookOpen, Bell, CheckCircle, Clock, FileText, Check, X, Filter } from 'lucide-react';
+
+// const StudentPortal = () => {
+//   const { user } = useContext(AuthContext);
+//   const [activeTab, setActiveTab] = useState('noticeboard');
+  
+//   const [dashboardData, setDashboardData] = useState({
+//     messages: [],
+//     attendance: [],
+//     exams: [] // New exam data array
+//   });
+//   const [isLoading, setIsLoading] = useState(true);
+
+//   useEffect(() => {
+//     const fetchData = async () => {
+//       try {
+//         const res = await api.get('/student/dashboard');
+//         setDashboardData({
+//           messages: res.data.messages || [],
+//           attendance: res.data.attendance || [],
+//           exams: res.data.exams || []
+//         });
+//       } catch (error) {
+//         console.error("Failed to load student data", error);
+//       } finally {
+//         setIsLoading(false);
+//       }
+//     };
+//     if (user && user.role === 'student') fetchData();
+//   }, [user]);
+
+//   if (!user || user.role !== 'student') {
+//     return (
+//       <div className="min-h-screen flex items-center justify-center bg-gray-50">
+//         <div className="p-10 text-center text-red-600 font-bold bg-red-50 rounded-xl border border-red-200">
+//           Access Denied. Students Only.
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   if (isLoading) return <div className="p-10 text-center mt-20 animate-pulse font-bold text-blue-600">Loading your workspace...</div>;
+
+//   const totalClasses = dashboardData.attendance.length;
+//   const presentClasses = dashboardData.attendance.filter(a => a.status === 'Present').length;
+//   const attendancePercentage = totalClasses === 0 ? 100 : Math.round((presentClasses / totalClasses) * 100);
+
+//   return (
+//     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      
+//       {/* Student Header */}
+//       <div className="bg-blue-600 rounded-2xl p-8 text-white shadow-lg mb-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+//         <div className="flex justify-between items-center">
+//           <div>
+//             <h1 className="text-3xl font-bold mb-2">Student Dashboard</h1>
+//             <p className="text-blue-100 text-lg">Welcome back, {user.name}. Here are your latest updates.</p>
+//           </div>
+//           <div className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-lg border border-white/30 flex items-center gap-2">
+//             <BookOpen size={18} />
+//             <span className="font-bold uppercase tracking-wider text-sm">Std: {user.std || 'Student'}</span>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Navigation Tabs */}
+//       <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-200 pb-4">
+//         <TabButton active={activeTab === 'noticeboard'} onClick={() => setActiveTab('noticeboard')} icon={<Bell size={18} />} text="Noticeboard" />
+//         <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckCircle size={18} />} text="My Attendance" />
+//         <TabButton active={activeTab === 'exams'} onClick={() => setActiveTab('exams')} icon={<FileText size={18} />} text="My Results" />
+//       </div>
+
+//       {/* Tab Contents */}
+//       {activeTab === 'noticeboard' && <NoticeboardTab messages={dashboardData.messages} />}
+//       {activeTab === 'attendance' && <AttendanceTab attendance={dashboardData.attendance} percentage={attendancePercentage} />}
+//       {activeTab === 'exams' && <ExamsTab exams={dashboardData.exams} />}
+
+//     </div>
+//   );
+// };
+
+// const TabButton = ({ active, onClick, icon, text }) => (
+//   <button onClick={onClick} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${active ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}>
+//     {icon} {text}
+//   </button>
+// );
+
+// /* ==========================================
+//    1. NOTICEBOARD TAB 
+//    ========================================== */
+// const NoticeboardTab = ({ messages }) => (
+//   <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fade-in">
+//     <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+//       <Bell className="text-blue-600" /> Recent Announcements
+//     </h2>
+//     <div className="space-y-4">
+//       {messages.length === 0 ? (
+//         <div className="p-8 text-center text-gray-500 bg-gray-50 border border-dashed rounded-xl">No new announcements from the faculty.</div>
+//       ) : (
+//         messages.map((msg) => (
+//           <div key={msg._id} className="bg-blue-50/50 rounded-xl border border-blue-100 p-5 hover:border-blue-300 transition-colors">
+//             <div className="flex justify-between items-start mb-3 border-b border-blue-100 pb-3">
+//               <div className="flex items-center gap-3">
+//                 <div className="h-10 w-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold shadow-sm">
+//                   {msg.sender?.name ? msg.sender.name.charAt(0).toUpperCase() : 'A'}
+//                 </div>
+//                 <div>
+//                   <p className="font-bold text-gray-900">{msg.sender?.name || 'Faculty'}</p>
+//                   <p className="text-xs font-bold text-blue-600 uppercase tracking-wider">Announcement</p>
+//                 </div>
+//               </div>
+//               <span className="text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded-md border border-gray-100 flex items-center gap-1">
+//                 <Clock size={12}/> {new Date(msg.createdAt).toLocaleDateString()}
+//               </span>
+//             </div>
+//             <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+//           </div>
+//         ))
+//       )}
+//     </div>
+//   </div>
+// );
+
+// /* ==========================================
+//    2. ATTENDANCE TAB
+//    ========================================== */
+// const AttendanceTab = ({ attendance, percentage }) => (
+//   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in">
+//     <div className="col-span-1 space-y-6">
+//       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
+//         <h3 className="text-gray-500 font-bold mb-4">Overall Attendance</h3>
+//         <div className="relative inline-flex items-center justify-center">
+//           <svg className="w-32 h-32 transform -rotate-90">
+//             <circle cx="64" cy="64" r="60" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-gray-100" />
+//             {attendance.length > 0 && (
+//                <circle cx="64" cy="64" r="60" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray="377" strokeDashoffset={377 - (377 * percentage) / 100} className={percentage >= 75 ? "text-green-500 transition-all duration-1000" : "text-red-500 transition-all duration-1000"} />
+//             )}
+//           </svg>
+//           <span className="absolute text-3xl font-bold text-gray-900">{attendance.length === 0 ? 'N/A' : `${percentage}%`}</span>
+//         </div>
+//       </div>
+//     </div>
+
+//     <div className="col-span-1 md:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+//       <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2"><CheckCircle className="text-blue-600" /> My Attendance History</h2>
+//       <div className="overflow-x-auto border border-gray-100 rounded-xl">
+//         <table className="w-full text-left border-collapse">
+//           <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="p-4 text-sm text-gray-500">Date</th><th className="p-4 text-sm text-gray-500">Status</th></tr></thead>
+//           <tbody>
+//             {attendance.length === 0 ? <tr><td colSpan="2" className="p-8 text-center text-gray-500">No records found.</td></tr> : 
+//               attendance.map((record, index) => (
+//                 <tr key={index} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
+//                   <td className="p-4 font-bold text-gray-900">{new Date(record.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</td>
+//                   <td className="p-4"><span className={`px-3 py-1 rounded-full text-xs font-bold ${record.status === 'Present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{record.status}</span></td>
+//                 </tr>
+//               ))
+//             }
+//           </tbody>
+//         </table>
+//       </div>
+//     </div>
+//   </div>
+// );
+
+// /* ==========================================
+//    3. EXAMS & RESULTS TAB
+//    ========================================== */
+// const ExamsTab = ({ exams }) => {
+//   const [filterStatus, setFilterStatus] = useState('All');
+//   const [filterMonth, setFilterMonth] = useState('All');
+//   const [sortDate, setSortDate] = useState('desc'); // 'desc' = Newest First
+
+//   // Generate unique months for the dropdown filter based on the student's exams
+//   const availableMonths = [...new Set(exams.map(e => {
+//     const d = new Date(e.examDate);
+//     return `${d.toLocaleString('default', { month: 'long' })} ${d.getFullYear()}`;
+//   }))];
+
+//   // Apply Filters & Sorting
+//   const processedExams = exams.filter(exam => {
+//     const examMonthYear = `${new Date(exam.examDate).toLocaleString('default', { month: 'long' })} ${new Date(exam.examDate).getFullYear()}`;
+    
+//     const matchesStatus = filterStatus === 'All' || exam.status === filterStatus;
+//     const matchesMonth = filterMonth === 'All' || examMonthYear === filterMonth;
+    
+//     return matchesStatus && matchesMonth;
+//   }).sort((a, b) => {
+//     return sortDate === 'desc' 
+//       ? new Date(b.examDate) - new Date(a.examDate) 
+//       : new Date(a.examDate) - new Date(b.examDate);
+//   });
+
+//   return (
+//     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fade-in">
+//       <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+//         <FileText className="text-blue-600" /> Academic Performance
+//       </h2>
+
+//       {/* FILTERING CONTROLS */}
+//       <div className="flex flex-col md:flex-row gap-4 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+//         <div className="flex items-center gap-2">
+//           <Filter size={18} className="text-gray-500" />
+          
+//           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="p-2 border rounded outline-none bg-white font-medium shadow-sm w-32">
+//             <option value="All">All Results</option>
+//             <option value="Pass">Passed</option>
+//             <option value="Fail">Failed</option>
+//             <option value="Absent">Absent</option>
+//           </select>
+
+//           <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="p-2 border rounded outline-none bg-white font-medium shadow-sm w-40">
+//             <option value="All">All Months</option>
+//             {availableMonths.map(month => <option key={month} value={month}>{month}</option>)}
+//           </select>
+
+//           <button onClick={() => setSortDate(sortDate === 'desc' ? 'asc' : 'desc')} className="p-2 border rounded bg-white font-medium shadow-sm ml-auto md:ml-4 hover:bg-gray-100">
+//             {sortDate === 'desc' ? 'Sort: Newest First' : 'Sort: Oldest First'}
+//           </button>
+//         </div>
+//       </div>
+
+//       {/* EXAM LIST */}
+//       <div className="space-y-4">
+//         {processedExams.length === 0 ? (
+//           <div className="p-8 text-center text-gray-500 bg-gray-50 border border-dashed rounded-xl">
+//             No exams match your filters, or no marks have been recorded yet.
+//           </div>
+//         ) : (
+//           processedExams.map((exam) => (
+//             <div key={exam._id} className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              
+//               <div>
+//                 <h3 className="font-bold text-lg text-gray-900">{exam.name}</h3>
+//                 <p className="text-sm text-gray-500 flex items-center gap-2">
+//                   <Clock size={14}/> {new Date(exam.examDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+//                 </p>
+//               </div>
+
+//               <div className="flex items-center gap-6 bg-gray-50 p-3 rounded-lg border border-gray-100 w-full md:w-auto justify-between">
+//                 <div className="text-center">
+//                   <p className="text-xs font-bold text-gray-500 uppercase">Marks</p>
+//                   <p className="font-bold text-xl text-gray-900">
+//                     {exam.isAbsent ? 'AB' : exam.obtainedMarks} <span className="text-sm font-normal text-gray-500">/ {exam.maxMarks}</span>
+//                   </p>
+//                 </div>
+                
+//                 <div className="text-center border-l border-gray-200 pl-6">
+//                   <p className="text-xs font-bold text-gray-500 uppercase">Score</p>
+//                   <p className="font-bold text-xl text-blue-600">{exam.percentage}%</p>
+//                 </div>
+
+//                 <div className="text-center border-l border-gray-200 pl-6">
+//                   <p className="text-xs font-bold text-gray-500 uppercase">Result</p>
+//                   {exam.status === 'Pass' ? <span className="text-green-600 font-bold flex items-center gap-1"><Check size={16}/> Pass</span> :
+//                    exam.status === 'Fail' ? <span className="text-red-500 font-bold flex items-center gap-1"><X size={16}/> Fail</span> :
+//                    <span className="text-orange-500 font-bold flex items-center gap-1"><X size={16}/> Absent</span>}
+//                 </div>
+//               </div>
+              
+//             </div>
+//           ))
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default StudentPortal;
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
-import { BookOpen, Bell, CheckCircle, Clock, FileText, Check, X, Filter } from 'lucide-react';
+// Added Menu and X icons for the mobile dropdown
+import { BookOpen, Bell, CheckCircle, Clock, FileText, Check, X, Filter, Menu } from 'lucide-react';
 
 const StudentPortal = () => {
   const { user } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('noticeboard');
   
+  // NEW: State to handle the mobile menu toggle
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
   const [dashboardData, setDashboardData] = useState({
     messages: [],
     attendance: [],
-    exams: [] // New exam data array
+    exams: [] 
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -48,28 +322,46 @@ const StudentPortal = () => {
   const presentClasses = dashboardData.attendance.filter(a => a.status === 'Present').length;
   const attendancePercentage = totalClasses === 0 ? 100 : Math.round((presentClasses / totalClasses) * 100);
 
+  // Helper function to handle tab switching and closing the menu on mobile
+  const handleTabSwitch = (tabName) => {
+    setActiveTab(tabName);
+    setIsMobileMenuOpen(false); // Close menu after clicking
+  };
+
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
       
-      {/* Student Header */}
-      <div className="bg-blue-600 rounded-2xl p-8 text-white shadow-lg mb-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+      {/* Student Header - Made responsive (p-5 on mobile, p-8 on desktop) */}
+      <div className="bg-blue-600 rounded-2xl p-5 md:p-8 text-white shadow-lg mb-6 md:mb-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Student Dashboard</h1>
-            <p className="text-blue-100 text-lg">Welcome back, {user.name}. Here are your latest updates.</p>
+            <h1 className="text-xl md:text-3xl font-bold mb-1 md:mb-2">Student Dashboard</h1>
+            <p className="text-blue-100 text-sm md:text-lg">Welcome back, {user.name}.</p>
           </div>
-          <div className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-lg border border-white/30 flex items-center gap-2">
-            <BookOpen size={18} />
-            <span className="font-bold uppercase tracking-wider text-sm">Std: {user.std || 'Student'}</span>
+          <div className="bg-white/20 backdrop-blur-md px-3 py-1.5 md:px-4 md:py-2 rounded-lg border border-white/30 flex items-center gap-2">
+            <BookOpen size={16} className="md:w-5 md:h-5" />
+            <span className="font-bold uppercase tracking-wider text-xs md:text-sm">Std: {user.std || 'Student'}</span>
           </div>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-200 pb-4">
-        <TabButton active={activeTab === 'noticeboard'} onClick={() => setActiveTab('noticeboard')} icon={<Bell size={18} />} text="Noticeboard" />
-        <TabButton active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckCircle size={18} />} text="My Attendance" />
-        <TabButton active={activeTab === 'exams'} onClick={() => setActiveTab('exams')} icon={<FileText size={18} />} text="My Results" />
+      {/* --- MOBILE MENU TOGGLE BUTTON --- */}
+      <div className="md:hidden flex justify-between items-center mb-4 bg-white p-3 rounded-lg border border-gray-200 shadow-sm cursor-pointer" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+        <span className="font-bold text-gray-700 flex items-center gap-2">
+          {activeTab === 'noticeboard' && <><Bell size={18}/> Noticeboard</>}
+          {activeTab === 'attendance' && <><CheckCircle size={18}/> My Attendance</>}
+          {activeTab === 'exams' && <><FileText size={18}/> My Results</>}
+        </span>
+        <button className="text-blue-600 focus:outline-none bg-blue-50 p-1 rounded">
+          {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
+
+      {/* Navigation Tabs - Hidden on mobile unless menu is open */}
+      <div className={`${isMobileMenuOpen ? 'flex flex-col' : 'hidden'} md:flex md:flex-row flex-wrap gap-2 mb-6 md:mb-8 md:border-b md:border-gray-200 pb-2 md:pb-4 transition-all duration-300`}>
+        <TabButton active={activeTab === 'noticeboard'} onClick={() => handleTabSwitch('noticeboard')} icon={<Bell size={18} />} text="Noticeboard" />
+        <TabButton active={activeTab === 'attendance'} onClick={() => handleTabSwitch('attendance')} icon={<CheckCircle size={18} />} text="My Attendance" />
+        <TabButton active={activeTab === 'exams'} onClick={() => handleTabSwitch('exams')} icon={<FileText size={18} />} text="My Results" />
       </div>
 
       {/* Tab Contents */}
@@ -81,8 +373,9 @@ const StudentPortal = () => {
   );
 };
 
+// Updated TabButton to be full-width on mobile (w-full md:w-auto)
 const TabButton = ({ active, onClick, icon, text }) => (
-  <button onClick={onClick} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${active ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}>
+  <button onClick={onClick} className={`w-full md:w-auto flex justify-start md:justify-center items-center gap-2 px-4 py-3 md:py-2 rounded-lg font-medium transition-colors ${active ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}>
     {icon} {text}
   </button>
 );
@@ -91,8 +384,8 @@ const TabButton = ({ active, onClick, icon, text }) => (
    1. NOTICEBOARD TAB 
    ========================================== */
 const NoticeboardTab = ({ messages }) => (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fade-in">
-    <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 animate-fade-in">
+    <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
       <Bell className="text-blue-600" /> Recent Announcements
     </h2>
     <div className="space-y-4">
@@ -100,22 +393,22 @@ const NoticeboardTab = ({ messages }) => (
         <div className="p-8 text-center text-gray-500 bg-gray-50 border border-dashed rounded-xl">No new announcements from the faculty.</div>
       ) : (
         messages.map((msg) => (
-          <div key={msg._id} className="bg-blue-50/50 rounded-xl border border-blue-100 p-5 hover:border-blue-300 transition-colors">
+          <div key={msg._id} className="bg-blue-50/50 rounded-xl border border-blue-100 p-4 md:p-5 hover:border-blue-300 transition-colors">
             <div className="flex justify-between items-start mb-3 border-b border-blue-100 pb-3">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold shadow-sm">
+                <div className="h-10 w-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold shadow-sm shrink-0">
                   {msg.sender?.name ? msg.sender.name.charAt(0).toUpperCase() : 'A'}
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900">{msg.sender?.name || 'Faculty'}</p>
-                  <p className="text-xs font-bold text-blue-600 uppercase tracking-wider">Announcement</p>
+                  <p className="font-bold text-sm md:text-base text-gray-900">{msg.sender?.name || 'Faculty'}</p>
+                  <p className="text-[10px] md:text-xs font-bold text-blue-600 uppercase tracking-wider">Announcement</p>
                 </div>
               </div>
-              <span className="text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded-md border border-gray-100 flex items-center gap-1">
+              <span className="text-[10px] md:text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded-md border border-gray-100 flex items-center gap-1 shrink-0">
                 <Clock size={12}/> {new Date(msg.createdAt).toLocaleDateString()}
               </span>
             </div>
-            <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+            <p className="text-sm md:text-base text-gray-800 whitespace-pre-wrap leading-relaxed">{msg.content}</p>
           </div>
         ))
       )}
@@ -127,33 +420,33 @@ const NoticeboardTab = ({ messages }) => (
    2. ATTENDANCE TAB
    ========================================== */
 const AttendanceTab = ({ attendance, percentage }) => (
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in">
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 animate-fade-in">
     <div className="col-span-1 space-y-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
-        <h3 className="text-gray-500 font-bold mb-4">Overall Attendance</h3>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 text-center">
+        <h3 className="text-gray-500 font-bold mb-4 text-sm md:text-base">Overall Attendance</h3>
         <div className="relative inline-flex items-center justify-center">
-          <svg className="w-32 h-32 transform -rotate-90">
-            <circle cx="64" cy="64" r="60" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-gray-100" />
+          <svg className="w-24 h-24 md:w-32 md:h-32 transform -rotate-90">
+            <circle cx="50%" cy="50%" r="45%" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-gray-100" />
             {attendance.length > 0 && (
-               <circle cx="64" cy="64" r="60" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray="377" strokeDashoffset={377 - (377 * percentage) / 100} className={percentage >= 75 ? "text-green-500 transition-all duration-1000" : "text-red-500 transition-all duration-1000"} />
+               <circle cx="50%" cy="50%" r="45%" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray="283" strokeDashoffset={283 - (283 * percentage) / 100} className={percentage >= 75 ? "text-green-500 transition-all duration-1000" : "text-red-500 transition-all duration-1000"} />
             )}
           </svg>
-          <span className="absolute text-3xl font-bold text-gray-900">{attendance.length === 0 ? 'N/A' : `${percentage}%`}</span>
+          <span className="absolute text-2xl md:text-3xl font-bold text-gray-900">{attendance.length === 0 ? 'N/A' : `${percentage}%`}</span>
         </div>
       </div>
     </div>
 
-    <div className="col-span-1 md:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2"><CheckCircle className="text-blue-600" /> My Attendance History</h2>
+    <div className="col-span-1 md:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
+      <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2"><CheckCircle className="text-blue-600" /> My Attendance History</h2>
       <div className="overflow-x-auto border border-gray-100 rounded-xl">
-        <table className="w-full text-left border-collapse">
-          <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="p-4 text-sm text-gray-500">Date</th><th className="p-4 text-sm text-gray-500">Status</th></tr></thead>
+        <table className="w-full text-left border-collapse min-w-[300px]">
+          <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="p-3 md:p-4 text-xs md:text-sm text-gray-500">Date</th><th className="p-3 md:p-4 text-xs md:text-sm text-gray-500">Status</th></tr></thead>
           <tbody>
-            {attendance.length === 0 ? <tr><td colSpan="2" className="p-8 text-center text-gray-500">No records found.</td></tr> : 
+            {attendance.length === 0 ? <tr><td colSpan="2" className="p-6 md:p-8 text-center text-sm text-gray-500">No records found.</td></tr> : 
               attendance.map((record, index) => (
                 <tr key={index} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
-                  <td className="p-4 font-bold text-gray-900">{new Date(record.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</td>
-                  <td className="p-4"><span className={`px-3 py-1 rounded-full text-xs font-bold ${record.status === 'Present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{record.status}</span></td>
+                  <td className="p-3 md:p-4 text-sm font-bold text-gray-900">{new Date(record.date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                  <td className="p-3 md:p-4"><span className={`px-2 md:px-3 py-1 rounded-full text-[10px] md:text-xs font-bold ${record.status === 'Present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{record.status}</span></td>
                 </tr>
               ))
             }
@@ -170,21 +463,17 @@ const AttendanceTab = ({ attendance, percentage }) => (
 const ExamsTab = ({ exams }) => {
   const [filterStatus, setFilterStatus] = useState('All');
   const [filterMonth, setFilterMonth] = useState('All');
-  const [sortDate, setSortDate] = useState('desc'); // 'desc' = Newest First
+  const [sortDate, setSortDate] = useState('desc'); 
 
-  // Generate unique months for the dropdown filter based on the student's exams
   const availableMonths = [...new Set(exams.map(e => {
     const d = new Date(e.examDate);
     return `${d.toLocaleString('default', { month: 'long' })} ${d.getFullYear()}`;
   }))];
 
-  // Apply Filters & Sorting
   const processedExams = exams.filter(exam => {
     const examMonthYear = `${new Date(exam.examDate).toLocaleString('default', { month: 'long' })} ${new Date(exam.examDate).getFullYear()}`;
-    
     const matchesStatus = filterStatus === 'All' || exam.status === filterStatus;
     const matchesMonth = filterMonth === 'All' || examMonthYear === filterMonth;
-    
     return matchesStatus && matchesMonth;
   }).sort((a, b) => {
     return sortDate === 'desc' 
@@ -193,69 +482,70 @@ const ExamsTab = ({ exams }) => {
   });
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fade-in">
-      <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 animate-fade-in">
+      <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
         <FileText className="text-blue-600" /> Academic Performance
       </h2>
 
-      {/* FILTERING CONTROLS */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-        <div className="flex items-center gap-2">
-          <Filter size={18} className="text-gray-500" />
-          
-          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="p-2 border rounded outline-none bg-white font-medium shadow-sm w-32">
+      {/* FILTERING CONTROLS - Now stacks on mobile */}
+      <div className="flex flex-col md:flex-row gap-3 mb-6 bg-gray-50 p-3 md:p-4 rounded-lg border border-gray-200">
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <Filter size={18} className="text-gray-500 shrink-0" />
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="p-2 border rounded outline-none bg-white font-medium shadow-sm w-full md:w-32 text-sm">
             <option value="All">All Results</option>
             <option value="Pass">Passed</option>
             <option value="Fail">Failed</option>
             <option value="Absent">Absent</option>
           </select>
+        </div>
 
-          <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="p-2 border rounded outline-none bg-white font-medium shadow-sm w-40">
+        <div className="flex items-center gap-2 w-full md:w-auto md:ml-2">
+          <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="p-2 border rounded outline-none bg-white font-medium shadow-sm w-full md:w-40 text-sm">
             <option value="All">All Months</option>
             {availableMonths.map(month => <option key={month} value={month}>{month}</option>)}
           </select>
-
-          <button onClick={() => setSortDate(sortDate === 'desc' ? 'asc' : 'desc')} className="p-2 border rounded bg-white font-medium shadow-sm ml-auto md:ml-4 hover:bg-gray-100">
-            {sortDate === 'desc' ? 'Sort: Newest First' : 'Sort: Oldest First'}
-          </button>
         </div>
+
+        <button onClick={() => setSortDate(sortDate === 'desc' ? 'asc' : 'desc')} className="p-2 border rounded bg-white font-medium shadow-sm w-full md:w-auto md:ml-auto hover:bg-gray-100 text-sm mt-2 md:mt-0">
+          {sortDate === 'desc' ? 'Sort: Newest First' : 'Sort: Oldest First'}
+        </button>
       </div>
 
       {/* EXAM LIST */}
       <div className="space-y-4">
         {processedExams.length === 0 ? (
-          <div className="p-8 text-center text-gray-500 bg-gray-50 border border-dashed rounded-xl">
+          <div className="p-6 md:p-8 text-center text-sm text-gray-500 bg-gray-50 border border-dashed rounded-xl">
             No exams match your filters, or no marks have been recorded yet.
           </div>
         ) : (
           processedExams.map((exam) => (
-            <div key={exam._id} className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div key={exam._id} className="border border-gray-200 rounded-xl p-4 md:p-5 hover:shadow-md transition-shadow flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               
-              <div>
-                <h3 className="font-bold text-lg text-gray-900">{exam.name}</h3>
-                <p className="text-sm text-gray-500 flex items-center gap-2">
-                  <Clock size={14}/> {new Date(exam.examDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              <div className="w-full md:w-auto border-b md:border-none border-gray-100 pb-3 md:pb-0">
+                <h3 className="font-bold text-base md:text-lg text-gray-900 truncate">{exam.name}</h3>
+                <p className="text-xs md:text-sm text-gray-500 flex items-center gap-1.5 mt-1">
+                  <Clock size={12}/> {new Date(exam.examDate).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
                 </p>
               </div>
 
-              <div className="flex items-center gap-6 bg-gray-50 p-3 rounded-lg border border-gray-100 w-full md:w-auto justify-between">
-                <div className="text-center">
-                  <p className="text-xs font-bold text-gray-500 uppercase">Marks</p>
-                  <p className="font-bold text-xl text-gray-900">
-                    {exam.isAbsent ? 'AB' : exam.obtainedMarks} <span className="text-sm font-normal text-gray-500">/ {exam.maxMarks}</span>
+              <div className="flex items-center gap-2 md:gap-6 bg-gray-50 p-2 md:p-3 rounded-lg border border-gray-100 w-full md:w-auto justify-between shrink-0">
+                <div className="text-center flex-1 md:flex-none">
+                  <p className="text-[10px] md:text-xs font-bold text-gray-500 uppercase">Marks</p>
+                  <p className="font-bold text-lg md:text-xl text-gray-900">
+                    {exam.isAbsent ? 'AB' : exam.obtainedMarks} <span className="text-xs md:text-sm font-normal text-gray-500">/ {exam.maxMarks}</span>
                   </p>
                 </div>
                 
-                <div className="text-center border-l border-gray-200 pl-6">
-                  <p className="text-xs font-bold text-gray-500 uppercase">Score</p>
-                  <p className="font-bold text-xl text-blue-600">{exam.percentage}%</p>
+                <div className="text-center border-l border-gray-200 pl-2 md:pl-6 flex-1 md:flex-none">
+                  <p className="text-[10px] md:text-xs font-bold text-gray-500 uppercase">Score</p>
+                  <p className="font-bold text-lg md:text-xl text-blue-600">{exam.percentage}%</p>
                 </div>
 
-                <div className="text-center border-l border-gray-200 pl-6">
-                  <p className="text-xs font-bold text-gray-500 uppercase">Result</p>
-                  {exam.status === 'Pass' ? <span className="text-green-600 font-bold flex items-center gap-1"><Check size={16}/> Pass</span> :
-                   exam.status === 'Fail' ? <span className="text-red-500 font-bold flex items-center gap-1"><X size={16}/> Fail</span> :
-                   <span className="text-orange-500 font-bold flex items-center gap-1"><X size={16}/> Absent</span>}
+                <div className="text-center border-l border-gray-200 pl-2 md:pl-6 flex-1 md:flex-none">
+                  <p className="text-[10px] md:text-xs font-bold text-gray-500 uppercase">Result</p>
+                  {exam.status === 'Pass' ? <span className="text-green-600 font-bold flex items-center justify-center gap-1 text-sm md:text-base"><Check size={14} className="hidden md:block"/> Pass</span> :
+                   exam.status === 'Fail' ? <span className="text-red-500 font-bold flex items-center justify-center gap-1 text-sm md:text-base"><X size={14} className="hidden md:block"/> Fail</span> :
+                   <span className="text-orange-500 font-bold flex items-center justify-center gap-1 text-sm md:text-base"><X size={14} className="hidden md:block"/> Absent</span>}
                 </div>
               </div>
               
