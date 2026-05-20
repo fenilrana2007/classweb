@@ -96,6 +96,7 @@ const StudentPortal = () => {
         <TabButton active={activeTab === 'attendance'} onClick={() => handleTabSwitch('attendance')} icon={<CheckCircle size={18} />} text="My Attendance" />
         <TabButton active={activeTab === 'exams'} onClick={() => handleTabSwitch('exams')} icon={<FileText size={18} />} text="My Results" />
         <TabButton active={activeTab === 'fees'} onClick={() => handleTabSwitch('fees')} icon={<IndianRupee size={18} />} text="My Fees" />
+        <TabButton active={activeTab === 'classlogs'} onClick={() => handleTabSwitch('classlogs')} icon={<BookOpen size={18} />} text="Class Work & Docs" />
       </div>
 
       {/* Tab Contents */}
@@ -104,6 +105,7 @@ const StudentPortal = () => {
       {activeTab === 'exams' && <ExamsTab exams={dashboardData.exams} />}
       {/* {activeTab === 'fees' && <FeesTab fees={dashboardData.fees} />} */}
       {activeTab === 'fees' && <MyFeesTab />}
+      {activeTab === 'classlogs' && <ClassLogsTab />}
     </div>
   );
 };
@@ -452,6 +454,83 @@ const MyFeesTab = () => {
             }
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+};
+/* ==========================================
+   5. STUDENT CLASS LOGS & MATERIAL TAB
+   ========================================== */
+import { Link as LinkIcon, BookOpen as BookIcon } from 'lucide-react'; // Ensure these are imported at the top of your file
+
+const StudentClassLogsTab = () => {
+  const [logs, setLogs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const res = await api.get('/student/class-logs');
+        setLogs(res.data);
+      } catch (err) { console.error(err); } finally { setIsLoading(false); }
+    };
+    fetchLogs();
+  }, []);
+
+  if (isLoading) return <div className="p-8 text-center animate-pulse text-gray-500 font-bold">Loading study materials...</div>;
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 animate-fade-in">
+      <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+        <BookIcon className="text-blue-600" /> Daily Class Work & Materials
+      </h2>
+
+      <div className="space-y-4">
+        {logs.length === 0 ? (
+          <div className="p-8 text-center text-gray-500 bg-gray-50 border border-dashed rounded-xl">
+            <p className="font-bold">No class logs available yet.</p>
+            <p className="text-sm mt-1">When your teachers post daily updates or study materials, they will appear here.</p>
+          </div>
+        ) : (
+          logs.map(log => (
+            <div key={log._id} className="border border-gray-200 p-4 md:p-5 rounded-xl hover:shadow-md transition-shadow bg-white">
+              <div className="flex flex-col md:flex-row justify-between md:items-center border-b border-gray-100 pb-3 mb-3 gap-2">
+                <span className="font-bold text-blue-800 text-base md:text-lg">
+                  {log.subject}
+                </span>
+                <span className="text-xs md:text-sm font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full w-fit">
+                  {new Date(log.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
+                  <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">Topic Taught</p>
+                  <p className="text-sm text-gray-800 whitespace-pre-wrap">{log.topicTaught}</p>
+                </div>
+                
+                <div className="bg-orange-50/50 p-4 rounded-lg border border-orange-100">
+                  <p className="text-xs font-bold text-orange-600 uppercase tracking-wider mb-1">Homework Assigned</p>
+                  <p className="text-sm text-gray-800 whitespace-pre-wrap">{log.homework || <span className="text-gray-500 italic">No homework assigned today.</span>}</p>
+                </div>
+              </div>
+              
+              {log.attachmentLink && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <a 
+                    href={log.attachmentLink.startsWith('http') ? log.attachmentLink : `https://${log.attachmentLink}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm w-full md:w-auto"
+                  >
+                    <LinkIcon size={16}/> 
+                    Open Attached Study Material
+                  </a>
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
