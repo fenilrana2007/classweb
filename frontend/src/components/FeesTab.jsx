@@ -77,12 +77,17 @@ const FeesTab = () => {
   });
 
   // Filtered Ledger for displaying in History/Collect
-  const filteredLedger = ledger.filter(
-    (s) =>
-      (!filterStd || s.std === filterStd) &&
-      (!filterBatch || s.batch === filterBatch),
+  // const filteredLedger = ledger.filter(
+  //   (s) =>
+  //     (!filterStd || s.std === filterStd) &&
+  //     (!filterBatch || s.batch === filterBatch),
+  // );
+// Filtered Ledger: Only show students who match the filters AND have made at least one payment
+  const filteredLedger = ledger.filter(s => 
+    (!filterStd || s.std === filterStd) && 
+    (!filterBatch || s.batch === filterBatch) &&
+    s.totalPaid > 0 // <-- THIS IS THE MAGIC FIX!
   );
-
   // Selected Student Details for Collection Validation
   const selectedStudentLedger = ledger.find(
     (s) => s._id === formData.studentId,
@@ -418,11 +423,12 @@ const FeesTab = () => {
                 <option value="" disabled>
                   -- Select a Student --
                 </option>
-                {filteredLedger.map((s) => (
+                {/* {filteredLedger.map((s) => (
                   <option key={s._id} value={s._id}>
                     {s.name} ({s.std})
                   </option>
-                ))}
+                ))} */}
+                {students.filter(s => (!filterStd || s.std === filterStd) && (!filterBatch || s.batch === filterBatch)).map(s => <option key={s._id} value={s._id}>{s.name} ({s.std})</option>)}
               </select>
             </div>
 
