@@ -3,6 +3,7 @@ const Attendance = require('../models/Attendance');
 const Message = require('../models/Message');
 const bcrypt = require('bcryptjs'); 
 const Exam = require('../models/Exam'); // Make sure to import the Exam model at the top!
+const ClassLog = require('../models/ClassLog'); // Ensure you import the model at the top!
 // ==========================================
 // ADMIN / TEACHER FUNCTIONS (Manage Students)
 // ==========================================
@@ -134,4 +135,17 @@ const deleteAllStudents = async (req, res) => {
         res.status(500).json({ message: 'Server Error during student cleanup' });
     }
 };
-module.exports = { addStudent, getStudents, getStudentDashboardData, deleteAllStudents };
+const getMyClassLogs = async (req, res) => {
+    try {
+        // Fetch logs that match the student's Standard, AND match either their specific batch OR "All Batches"
+        const logs = await ClassLog.find({
+            std: req.user.std,
+            batch: { $in: [req.user.batch, 'All Batches'] }
+        }).sort({ date: -1 }); // Newest logs first
+        
+        res.json(logs);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching class logs' });
+    }
+};
+module.exports = { addStudent, getStudents, getStudentDashboardData, deleteAllStudents, getMyClassLogs };
