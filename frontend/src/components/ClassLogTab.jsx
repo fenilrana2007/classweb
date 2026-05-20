@@ -49,12 +49,23 @@ const ClassLogTab = () => {
     data.append("file", file);
     
     // ⚠️ IMPORTANT: Replace these with your actual Cloudinary details!
-    data.append("upload_preset", process.env.CLOUDINARY_UPLOAD_PRESET); 
-    data.append("cloud_name", process.env.CLOUDINARY_CLOUD_NAME); 
+    // data.append("upload_preset", process.env.CLOUDINARY_UPLOAD_PRESET); 
+    // data.append("cloud_name", process.env.CLOUDINARY_CLOUD_NAME); 
+
+    // try {
+    //   // ⚠️ IMPORTANT: Replace 'YOUR_CLOUD_NAME' in this URL too!
+    //   const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/auto/upload`, {
+    //     method: "POST",
+    //     body: data
+    //   });
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+
+    data.append("upload_preset", uploadPreset); 
+    data.append("cloud_name", cloudName); 
 
     try {
-      // ⚠️ IMPORTANT: Replace 'YOUR_CLOUD_NAME' in this URL too!
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/auto/upload`, {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
         method: "POST",
         body: data
       });
