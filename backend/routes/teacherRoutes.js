@@ -3,7 +3,10 @@ const express = require('express');
 const router = express.Router();
 const { 
     getTeacherStats, getStudents, addStudent, updateStudent, 
-    toggleBlockStudent, deleteStudent, submitAttendance, sendMessage , getAttendance,getMessages
+    toggleBlockStudent, deleteStudent, submitAttendance, sendMessage , getAttendance,getMessages,createClassLog, 
+    getClassLogs, 
+    updateClassLog, 
+    deleteClassLog
 } = require('../controllers/teacherController');
 const { protect, teacherOrAdmin } = require('../middlewares/authMiddleware');
 
@@ -22,4 +25,9 @@ router.post('/attendance', submitAttendance);
 router.post('/messages', sendMessage);
 router.get('/attendance', getAttendance); 
 router.get('/messages', getMessages);
+
+router.post('/class-logs', protect, createClassLog);
+router.get('/class-logs', protect, getClassLogs);
+router.put('/class-logs/:id', protect, updateClassLog);
+router.delete('/class-logs/:id', protect, deleteClassLog);
 module.exports = router;

@@ -7,7 +7,7 @@ import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import { 
   BookOpen, LayoutDashboard, CheckSquare, MessageSquare, 
-  Send, Bell, Clock, GraduationCap, FileText, Menu, X,IndianRupee,Printer 
+  Send, Bell, Clock, GraduationCap, FileText, Menu, X,IndianRupee,Printer ,Edit, Trash2
 } from 'lucide-react';
 import StudentsTab from '../components/StudentsTab'; 
 import ExamsTab from '../components/ExamsTab';
