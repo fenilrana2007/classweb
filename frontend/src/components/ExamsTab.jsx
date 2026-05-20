@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useContext } from 'react';
 import api from '../services/api';
 import { FileText, Plus, Download, Trash2, Edit3, TrendingUp, CheckCircle, XCircle } from 'lucide-react';
 import { STANDARD_OPTIONS } from './StudentsTab'; 
-
+import { AuthContext } from '../context/AuthContext'; // <-- Add this line!
 const ExamsTab = () => {
+  const { user: currentUser } = useContext(AuthContext);
   const [exams, setExams] = useState([]);
   const [students, setStudents] = useState([]);
   
