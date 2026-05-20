@@ -141,5 +141,5 @@ const deleteClassLog = async (req, res) => {
     } catch (err) { res.status(500).json({ message: 'Error deleting log' }); }
 };
 module.exports = {
-    getTeacherStats, getStudents, addStudent, updateStudent, toggleBlockStudent, deleteStudent, submitAttendance, sendMessage, getAttendance,getMessages
+    getTeacherStats, getStudents, addStudent, updateStudent, toggleBlockStudent, deleteStudent, submitAttendance, sendMessage, getAttendance,getMessages, createClassLog, getClassLogs, updateClassLog, deleteClassLog
 };
