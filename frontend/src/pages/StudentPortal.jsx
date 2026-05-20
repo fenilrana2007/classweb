@@ -105,7 +105,7 @@ const StudentPortal = () => {
       {activeTab === 'exams' && <ExamsTab exams={dashboardData.exams} />}
       {/* {activeTab === 'fees' && <FeesTab fees={dashboardData.fees} />} */}
       {activeTab === 'fees' && <MyFeesTab />}
-      {activeTab === 'classlogs' && <ClassLogsTab />}
+      {activeTab === 'classlogs' && <StudentClassLogsTab />}
     </div>
   );
 };

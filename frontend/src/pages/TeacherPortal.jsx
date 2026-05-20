@@ -4,6 +4,8 @@
 // src/pages/TeacherPortal.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import ClassLogTab from '../components/ClassLogTab';
+
 import api from '../services/api';
 import { 
   BookOpen, LayoutDashboard, CheckSquare, MessageSquare, 
@@ -16,7 +18,6 @@ const standardOptions = [
   "1st Std", "2nd Std", "3rd Std", "4th Std", "5th Std", "6th Std", 
   "7th Std", "8th Std", "9th Std", "10th Std", "11th Commerce", "12th Commerce"
 ];
-import ClassLogTab from '../components/ClassLogTab';
 const TeacherPortal = () => {
   const { user } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('overview');
