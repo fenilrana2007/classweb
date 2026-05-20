@@ -16,7 +16,7 @@ const standardOptions = [
   "1st Std", "2nd Std", "3rd Std", "4th Std", "5th Std", "6th Std", 
   "7th Std", "8th Std", "9th Std", "10th Std", "11th Commerce", "12th Commerce"
 ];
-
+import ClassLogTab from '../components/ClassLogTab';
 const TeacherPortal = () => {
   const { user } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('overview');
@@ -86,6 +86,7 @@ const TeacherPortal = () => {
           {activeTab === 'messages' && <><MessageSquare size={18}/> Broadcast</>}
           {activeTab === 'exams' && <><FileText size={18}/> Examinations</>}
           {activeTab === 'fees' && <><IndianRupee size={18} /> Fee Management</>}
+          {activeTab === 'class-logs' && <><BookOpen size={18} /> Class Logs</>}
         </span>
         <button className="text-purple-600 focus:outline-none bg-purple-50 p-1 rounded">
           {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -100,6 +101,7 @@ const TeacherPortal = () => {
         <TabButton active={activeTab === 'messages'} onClick={() => handleTabSwitch('messages')} icon={<MessageSquare size={18} />} text="Broadcast" />
         <TabButton active={activeTab === 'exams'} onClick={() => handleTabSwitch('exams')} icon={<FileText size={18} />} text="Examinations" />
         <TabButton active={activeTab === 'fees'} onClick={() => handleTabSwitch('fees')} icon={<IndianRupee size={18} />} text="Fee Management" />
+        <TabButton active={activeTab === 'class-logs'} onClick={() => handleTabSwitch('class-logs')} icon={<BookOpen size={18} />} text="Class Logs" />
       </div>
 
       {/* Content Rendering */}
@@ -109,6 +111,7 @@ const TeacherPortal = () => {
       {activeTab === 'messages' && <MessagesTab messages={messages} setMessages={setMessages} user={user} />}
       {activeTab === 'exams' && <ExamsTab />}
       {activeTab === 'fees' && <FeesTab />}
+      {activeTab === 'class-logs' && <ClassLogTab />}
     </div>
   );
 };
