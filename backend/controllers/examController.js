@@ -51,7 +51,15 @@ const deleteExam = async (req, res) => {
     }
 };
 const deleteAllExams = async (req, res) => {
-    await Exam.deleteMany({});
-    res.json({ message: 'All exams wiped.' });
+    try {
+        await Exam.deleteMany({});
+        res.json({ message: 'All exams and marks wiped successfully.' });
+    } catch (error) {
+        console.error("Wipe Exams Error:", error);
+        res.status(500).json({ message: 'Error wiping exams from database' });
+    }
 };
+
+// Make sure it is exported!
+//module.exports = { createExam, getExams, updateMarks, deleteExam, deleteAllExams };
 module.exports = { createExam, getExams, updateMarks, deleteExam , deleteAllExams};
