@@ -87,6 +87,9 @@ const deletePayment = async (req, res) => {
         res.json({ message: 'Payment deleted successfully' });
     } catch (error) { res.status(500).json({ message: 'Error deleting payment' }); }
 };
-
+const deleteAllPayments = async (req, res) => {
+    await FeeReceipt.deleteMany({});
+    res.json({ message: 'All payments wiped.' });
+};
 // Update your module.exports to include them:
-module.exports = { setFeeStructure, getFeeStructure, recordPayment, getAllPayments, getMyFeeStatus, updatePayment, deletePayment };
+module.exports = { setFeeStructure, getFeeStructure, recordPayment, getAllPayments, getMyFeeStatus, updatePayment, deletePayment, deleteAllPayments };

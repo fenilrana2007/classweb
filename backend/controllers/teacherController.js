@@ -3,7 +3,7 @@ const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const Message = require('../models/Message');
 const bcrypt = require('bcryptjs');
-
+const ClassLog = require('../models/ClassLog');
 const getTeacherStats = async (req, res) => {
     try {
         const totalStudents = await User.countDocuments({ role: 'student' });
@@ -112,6 +112,33 @@ const getMessages = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }
+};
+const createClassLog = async (req, res) => {
+    try {
+        const log = await ClassLog.create({ ...req.body, teacherId: req.user._id });
+        res.status(201).json(log);
+    } catch (err) { res.status(500).json({ message: 'Error creating log' }); }
+};
+
+const getClassLogs = async (req, res) => {
+    try {
+        const logs = await ClassLog.find().sort({ date: -1 });
+        res.json(logs);
+    } catch (err) { res.status(500).json({ message: 'Error fetching logs' }); }
+};
+
+const updateClassLog = async (req, res) => {
+    try {
+        const log = await ClassLog.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json(log);
+    } catch (err) { res.status(500).json({ message: 'Error updating log' }); }
+};
+
+const deleteClassLog = async (req, res) => {
+    try {
+        await ClassLog.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Log deleted' });
+    } catch (err) { res.status(500).json({ message: 'Error deleting log' }); }
 };
 module.exports = {
     getTeacherStats, getStudents, addStudent, updateStudent, toggleBlockStudent, deleteStudent, submitAttendance, sendMessage, getAttendance,getMessages

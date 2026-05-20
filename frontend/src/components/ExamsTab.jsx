@@ -129,6 +129,41 @@ const ExamsTab = () => {
 
   const filteredExams = exams.filter(e => filterStd === 'All' || e.std === filterStd);
 
+  // --- ADD THIS TO ExamsTab.jsx ---
+  const handleMasterExportExams = () => {
+    if (exams.length === 0) return alert("No exams to export.");
+
+    // Sort exams strictly by Standard Array order (1st to 12th)
+    const sortedExams = [...exams].sort((a, b) => STANDARD_OPTIONS.indexOf(a.std) - STANDARD_OPTIONS.indexOf(b.std));
+
+    let csvContent = "Standard,Batch,Exam Name,Max Marks,Passing Marks,Date,Total Students Appeared\n";
+    sortedExams.forEach(exam => {
+      const date = new Date(exam.examDate).toLocaleDateString();
+      csvContent += `"${exam.std}","${exam.batch}","${exam.name}","${exam.maxMarks}","${exam.minPassMarks}","${date}","${exam.marks.length}"\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `Master_Exams_Backup_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleMasterDeleteAllExams = async () => {
+    const confirmDelete = window.confirm("END OF YEAR WIPE: Are you sure you want to permanently delete ALL exams across the entire system? A backup will be downloaded automatically.");
+    if (confirmDelete) {
+      handleMasterExportExams(); // Auto Backup first!
+      try {
+        await api.delete('/exams/all');
+        setExams([]);
+        alert("All exams have been wiped from the database.");
+      } catch (err) { alert("Failed to wipe exams."); }
+    }
+  };
+
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fade-in max-w-6xl mx-auto">
       
@@ -178,6 +213,12 @@ const ExamsTab = () => {
                   <button onClick={() => { setSelectedExam(exam); setViewMode('viewResults'); }} className="flex-1 bg-blue-50 text-blue-700 p-2 rounded text-sm font-bold flex justify-center items-center gap-1 hover:bg-blue-100"><TrendingUp size={14}/> View Results</button>
                   <button onClick={() => exportExamToCSV(exam)} className="p-2 text-gray-500 hover:text-gray-900 bg-gray-50 rounded" title="Export CSV"><Download size={16}/></button>
                   <button onClick={() => handleDeleteExam(exam)} className="p-2 text-red-500 hover:text-red-700 bg-red-50 rounded" title="Delete Exam"><Trash2 size={16}/></button>
+                  {currentUser?.role === 'admin' && (
+                     <div className="flex gap-2 mb-4">
+                      <button onClick={handleMasterExportExams} className="bg-green-100 text-green-700 px-3 py-1 rounded text-sm font-bold">Export All Exams (Excel)</button>
+                      <button onClick={handleMasterDeleteAllExams} className="bg-red-100 text-red-700 px-3 py-1 rounded text-sm font-bold">Wipe All Exams</button>
+                      </div>
+          )}
                 </div>
               </div>
             ))}

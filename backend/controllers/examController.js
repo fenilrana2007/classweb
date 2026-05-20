@@ -50,5 +50,8 @@ const deleteExam = async (req, res) => {
         res.status(500).json({ message: 'Error deleting exam' });
     }
 };
-
-module.exports = { createExam, getExams, updateMarks, deleteExam };
+const deleteAllExams = async (req, res) => {
+    await Exam.deleteMany({});
+    res.json({ message: 'All exams wiped.' });
+};
+module.exports = { createExam, getExams, updateMarks, deleteExam , deleteAllExams};
