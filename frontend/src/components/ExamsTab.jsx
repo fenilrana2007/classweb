@@ -168,7 +168,7 @@ const ExamsTab = () => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fade-in max-w-6xl mx-auto">
       
-      <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+      {/* <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
         <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
           <FileText className="text-blue-600" /> 
           {viewMode === 'list' ? 'Examination Center' : 
@@ -186,8 +186,41 @@ const ExamsTab = () => {
             Back to Exams
           </button>
         )}
-      </div>
+      </div> */}
+      {/* Dynamic Header */}
+      <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          <FileText className="text-blue-600" /> 
+          {viewMode === 'list' ? 'Examination Center' : 
+           viewMode === 'create' ? 'Schedule New Exam' : 
+           viewMode === 'grade' ? `Grading: ${selectedExam?.name}` : 
+           `Results: ${selectedExam?.name}`}
+        </h2>
+        
+        <div className="flex items-center gap-2">
+          {/* NEW PLACEMENT: Master Buttons in Header (Only for Admin) */}
+          {currentUser?.role === 'admin' && viewMode === 'list' && (
+            <>
+              <button onClick={handleMasterExportExams} className="bg-green-50 text-green-700 border border-green-200 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-green-100 shadow-sm">
+                <Download size={16} /> Export All (Excel)
+              </button>
+              <button onClick={handleMasterDeleteAllExams} className="bg-red-50 text-red-700 border border-red-200 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-red-100 shadow-sm">
+                <Trash2 size={16} /> Wipe All Exams
+              </button>
+            </>
+          )}
 
+          {viewMode === 'list' ? (
+            <button onClick={() => setViewMode('create')} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-bold hover:bg-blue-700 shadow-sm">
+              <Plus size={16} /> New Exam
+            </button>
+          ) : (
+            <button onClick={() => setViewMode('list')} className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-bold hover:bg-gray-300 shadow-sm">
+              Back to Exams
+            </button>
+          )}
+        </div>
+      </div>
       {viewMode === 'list' && (
         <>
           <div className="flex gap-4 mb-4">
