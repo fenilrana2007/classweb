@@ -157,23 +157,28 @@ const OverviewTab = ({ messages }) => (
 );
 
 /* =========================================================================
-   2. ATTENDANCE TAB (Dual Mode: Record & View)
+   2. ATTENDANCE TAB (With Full CRUD & Real-Time Updates)
    ========================================================================= */
 const AttendanceTab = ({ students }) => {
   const [tabMode, setTabMode] = useState('record');
   
+  // Record State
   const [addDate, setAddDate] = useState(new Date().toISOString().split('T')[0]);
   const [addStd, setAddStd] = useState('All');
   const [addBatch, setAddBatch] = useState('All');
   const [markMode, setMarkMode] = useState('markPresent');
   const [selectedIds, setSelectedIds] = useState(new Set());
 
+  // View & Edit State
   const [fetchDate, setFetchDate] = useState(new Date().toISOString().split('T')[0]);
   const [fetchStd, setFetchStd] = useState('All');
   const [fetchBatch, setFetchBatch] = useState('All');
   const [viewStatusFilter, setViewStatusFilter] = useState('All');
   const [viewData, setViewData] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
+
+  // The actual MongoDB Document ID of the attendance record (needed for Edit/Delete)
+  const [currentAttendanceDocId, setCurrentAttendanceDocId] = useState(null); 
 
   const filteredStudents = students.filter(s => (addStd === 'All' || s.std === addStd) && (addBatch === 'All' || s.batch === addBatch));
 
@@ -183,6 +188,7 @@ const AttendanceTab = ({ students }) => {
     setSelectedIds(newSet);
   };
 
+  // --- SAVE NEW ATTENDANCE ---
   const handleSubmitAttendance = async () => {
     if (filteredStudents.length === 0) return alert("No students found in this class/batch!");
     const records = filteredStudents.map(student => {
@@ -193,38 +199,96 @@ const AttendanceTab = ({ students }) => {
 
     try {
       await api.post('/teacher/attendance', { date: addDate, std: addStd, batch: addBatch, records });
-      alert(`Attendance for ${addDate} Saved!`);
+      alert(`Attendance for ${addDate} Saved Successfully!`);
       setSelectedIds(new Set()); 
+      // Switch to View Mode and Auto-Fetch the new data!
+      setFetchDate(addDate);
+      setFetchStd(addStd);
+      setFetchBatch(addBatch);
+      setTabMode('view');
+      handleFetchAttendance(addDate, addStd, addBatch);
     } catch (err) { alert("Failed to save attendance."); }
   };
 
-  const handleFetchAttendance = async () => {
+  // --- FETCH PAST ATTENDANCE ---
+  const handleFetchAttendance = async (overrideDate, overrideStd, overrideBatch) => {
     setIsFetching(true);
+    const d = overrideDate || fetchDate;
+    const s = overrideStd || fetchStd;
+    const b = overrideBatch || fetchBatch;
+
     try {
-      const res = await api.get(`/teacher/attendance?date=${fetchDate}&std=${fetchStd}&batch=${fetchBatch}`);
-      const expectedStudents = students.filter(s => (fetchStd === 'All' || s.std === fetchStd) && (fetchBatch === 'All' || s.batch === fetchBatch));
+      const res = await api.get(`/teacher/attendance?date=${d}&std=${s}&batch=${b}`);
+      const expectedStudents = students.filter(student => (s === 'All' || student.std === s) && (b === 'All' || student.batch === b));
       
       const presentIds = new Set();
-      res.data.forEach(recordDoc => recordDoc.records.forEach(r => {
-        if (r.status === 'Present' && r.studentId) {
-          const studentIdStr = typeof r.studentId === 'object' ? r.studentId._id : r.studentId;
-          presentIds.add(studentIdStr.toString());
-        }
-      }));
+      let docId = null;
+
+      if (res.data && res.data.length > 0) {
+        docId = res.data[0]._id; // Store Document ID for CRUD
+        res.data.forEach(recordDoc => recordDoc.records.forEach(r => {
+          if (r.status === 'Present' && r.studentId) {
+            const studentIdStr = typeof r.studentId === 'object' ? r.studentId._id : r.studentId;
+            presentIds.add(studentIdStr.toString());
+          }
+        }));
+      }
+
+      setCurrentAttendanceDocId(docId);
 
       const calculatedRecords = expectedStudents.map(student => ({
-        name: student.name, std: student.std || 'N/A', batch: student.batch || 'N/A',
+        studentId: student._id,
+        name: student.name, 
+        std: student.std || 'N/A', 
+        batch: student.batch || 'N/A',
         status: presentIds.has(student._id.toString()) ? 'Present' : 'Absent'
       }));
 
-      calculatedRecords.sort((a, b) => {
-        if (a.std !== b.std) return a.std.localeCompare(b.std);
-        if (a.batch !== b.batch) return a.batch.localeCompare(b.batch);
-        return a.name.localeCompare(b.name);
-      });
-
+      calculatedRecords.sort((a, b) => a.name.localeCompare(b.name));
       setViewData(calculatedRecords);
-    } catch (err) { alert("Failed to fetch records."); } finally { setIsFetching(false); }
+    } catch (err) { alert("Failed to fetch records."); } 
+    finally { setIsFetching(false); }
+  };
+
+  // --- TOGGLE A SINGLE STUDENT'S STATUS (EDIT) ---
+  const handleToggleSingleStatus = async (studentId, currentStatus) => {
+    if (!currentAttendanceDocId) return alert("No master record found to update. Please save attendance first.");
+    
+    const newStatus = currentStatus === 'Present' ? 'Absent' : 'Present';
+    
+    // Optimistic UI Update
+    setViewData(viewData.map(r => r.studentId === studentId ? { ...r, status: newStatus } : r));
+
+    try {
+      // Create the updated records array
+      const updatedRecords = viewData.map(r => ({
+        studentId: r.studentId,
+        status: r.studentId === studentId ? newStatus : r.status
+      }));
+
+      // Send to backend (Assuming your backend uses the same endpoint with an upsert/update logic)
+      await api.post('/teacher/attendance', { 
+        date: fetchDate, std: fetchStd, batch: fetchBatch, records: updatedRecords 
+      });
+      
+    } catch (err) {
+      alert("Failed to update status.");
+      handleFetchAttendance(); // Revert on failure
+    }
+  };
+
+  // --- DELETE ENTIRE DAY'S RECORD ---
+  const handleDeleteAttendance = async () => {
+    if (!currentAttendanceDocId) return;
+    if (window.confirm(`CRITICAL: Are you sure you want to permanently delete the attendance record for ${fetchDate}?`)) {
+      try {
+        // You will need to add this route to your backend! (router.delete('/attendance/:id'))
+        await api.delete(`/teacher/attendance/${currentAttendanceDocId}`);
+        alert("Attendance Record Deleted.");
+        setViewData([]);
+        setCurrentAttendanceDocId(null);
+      } catch (err) { alert("Failed to delete record."); }
+    }
   };
 
   const displayedRecords = viewData.filter(r => viewStatusFilter === 'All' || r.status === viewStatusFilter);
@@ -233,11 +297,12 @@ const AttendanceTab = ({ students }) => {
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
       <div className="flex gap-2 md:gap-4 mb-6 md:mb-8 border-b pb-4">
         <button onClick={() => setTabMode('record')} className={`pb-2 px-1 md:px-2 font-bold text-sm md:text-lg ${tabMode === 'record' ? 'border-b-4 border-purple-600 text-purple-700' : 'text-gray-400'}`}>Record Attendance</button>
-        <button onClick={() => setTabMode('view')} className={`pb-2 px-1 md:px-2 font-bold text-sm md:text-lg ${tabMode === 'view' ? 'border-b-4 border-purple-600 text-purple-700' : 'text-gray-400'}`}>View Past Records</button>
+        <button onClick={() => {setTabMode('view'); handleFetchAttendance();}} className={`pb-2 px-1 md:px-2 font-bold text-sm md:text-lg ${tabMode === 'view' ? 'border-b-4 border-purple-600 text-purple-700' : 'text-gray-400'}`}>View & Edit Records</button>
       </div>
 
       {tabMode === 'record' && (
         <div className="animate-fade-in">
+          {/* ... Keep your existing Record mode form here exactly as it is ... */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-6 bg-purple-50 p-3 md:p-4 rounded-xl border border-purple-100">
             <div><label className="block text-xs md:text-sm font-bold text-purple-900 mb-1">Select Date</label><input type="date" value={addDate} onChange={(e) => setAddDate(e.target.value)} className="w-full p-2 border rounded text-sm" /></div>
             <div><label className="block text-xs md:text-sm font-bold text-purple-900 mb-1">Standard</label><select value={addStd} onChange={e => setAddStd(e.target.value)} className="w-full p-2 border rounded text-sm bg-white"><option value="All">All Standards</option>{standardOptions.map(std => <option key={std} value={std}>{std}</option>)}</select></div>
@@ -267,15 +332,31 @@ const AttendanceTab = ({ students }) => {
             <div><label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Standard</label><select value={fetchStd} onChange={e => setFetchStd(e.target.value)} className="w-full p-2 border rounded text-sm bg-white"><option value="All">All Standards</option>{standardOptions.map(std => <option key={std} value={std}>{std}</option>)}</select></div>
             <div><label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Batch</label><select value={fetchBatch} onChange={e => setFetchBatch(e.target.value)} className="w-full p-2 border rounded text-sm bg-white"><option value="All">All Batches</option><option value="Morning">Morning</option><option value="Evening">Evening</option></select></div>
             <div><label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Status Filter</label><select value={viewStatusFilter} onChange={e => setViewStatusFilter(e.target.value)} className="w-full p-2 border rounded text-sm border-purple-300 font-bold text-purple-700 bg-white"><option value="All">Show All</option><option value="Present">Present Only</option><option value="Absent">Absent Only</option></select></div>
-            <button onClick={handleFetchAttendance} disabled={isFetching} className="bg-gray-900 text-white p-2 rounded-lg font-bold hover:bg-gray-800 h-[38px] md:h-[38px] w-full md:w-auto mt-2 md:mt-0 text-sm shadow-md">{isFetching ? 'Loading...' : 'Fetch'}</button>
+            <div className="flex gap-2">
+              <button onClick={() => handleFetchAttendance()} disabled={isFetching} className="flex-1 bg-gray-900 text-white p-2 rounded-lg font-bold hover:bg-gray-800 h-[38px] text-sm shadow-md">{isFetching ? 'Loading...' : 'Fetch'}</button>
+              {currentAttendanceDocId && <button onClick={handleDeleteAttendance} className="bg-red-100 text-red-600 p-2 rounded-lg font-bold hover:bg-red-200 h-[38px] text-sm shadow-sm" title="Delete entire day's record"><Trash2 size={18}/></button>}
+            </div>
           </div>
+          
           <div className="overflow-x-auto border rounded-xl">
             <table className="w-full text-left border-collapse min-w-[400px]">
-              <thead><tr className="bg-gray-100 border-b"><th className="p-3 text-xs md:text-sm">Student Name</th><th className="p-3 text-xs md:text-sm">Standard</th><th className="p-3 text-xs md:text-sm">Batch</th><th className="p-3 text-xs md:text-sm">Status</th></tr></thead>
+              <thead><tr className="bg-gray-100 border-b"><th className="p-3 text-xs md:text-sm">Student Name</th><th className="p-3 text-xs md:text-sm">Standard</th><th className="p-3 text-xs md:text-sm">Status (Click to toggle)</th></tr></thead>
               <tbody>
-                {displayedRecords.length === 0 ? (<tr><td colSpan="4" className="p-6 md:p-8 text-center text-sm text-gray-500">No records to display.</td></tr>) : (
+                {displayedRecords.length === 0 ? (<tr><td colSpan="3" className="p-6 md:p-8 text-center text-sm text-gray-500">No records to display.</td></tr>) : (
                   displayedRecords.map((record, idx) => (
-                    <tr key={idx} className="border-b hover:bg-gray-50"><td className="p-3 text-sm font-bold text-gray-900">{record.name}</td><td className="p-3 text-xs md:text-sm text-gray-600">{record.std}</td><td className="p-3 text-xs md:text-sm text-gray-600">{record.batch}</td><td className="p-3"><span className={`px-2 md:px-3 py-1 rounded-full text-[10px] md:text-xs font-bold ${record.status === 'Present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{record.status}</span></td></tr>
+                    <tr key={idx} className="border-b hover:bg-gray-50">
+                      <td className="p-3 text-sm font-bold text-gray-900">{record.name}</td>
+                      <td className="p-3 text-xs md:text-sm text-gray-600">{record.std} • {record.batch}</td>
+                      <td className="p-3">
+                        <button 
+                          onClick={() => handleToggleSingleStatus(record.studentId, record.status)}
+                          title="Click to change status"
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-sm transition-transform hover:scale-105 ${record.status === 'Present' ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
+                        >
+                          {record.status} 
+                        </button>
+                      </td>
+                    </tr>
                   ))
                 )}
               </tbody>
