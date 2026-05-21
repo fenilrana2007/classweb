@@ -2,11 +2,11 @@
 const express = require('express');
 const router = express.Router();
 const { 
-    getTeacherStats, getStudents, addStudent, updateStudent, 
-    toggleBlockStudent, deleteStudent, submitAttendance, sendMessage , getAttendance,getMessages,createClassLog, 
-    getClassLogs, 
-    updateClassLog, 
-    deleteClassLog
+    getTeacherStats, getStudents, addStudent, updateStudent, toggleBlockStudent, deleteStudent, 
+    submitAttendance, getAttendance, deleteAttendance, wipeAllAttendance, // <- Exported new functions
+    sendMessage, getMessages, 
+    createClassLog, getClassLogs, updateClassLog, deleteClassLog
+
 } = require('../controllers/teacherController');
 const { protect, teacherOrAdmin } = require('../middlewares/authMiddleware');
 
@@ -21,13 +21,16 @@ router.put('/students/:id', updateStudent);
 router.put('/students/:id/block', toggleBlockStudent);
 router.delete('/students/:id', deleteStudent);
 
-router.post('/attendance', submitAttendance);
 router.post('/messages', sendMessage);
-router.get('/attendance', getAttendance); 
 router.get('/messages', getMessages);
 
 router.post('/class-logs', protect, createClassLog);
 router.get('/class-logs', protect, getClassLogs);
 router.put('/class-logs/:id', protect, updateClassLog);
 router.delete('/class-logs/:id', protect, deleteClassLog);
+
+router.post('/attendance', protect, submitAttendance);
+router.get('/attendance', protect, getAttendance);
+router.delete('/attendance/:id', protect, deleteAttendance); // <-- ADD THIS LINE
+router.delete('/attendance', protect, wipeAllAttendance); // <-- ADD THIS LINE
 module.exports = router;

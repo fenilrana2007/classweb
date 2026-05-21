@@ -86,7 +86,7 @@ const StudentPortal = () => {
           {/* {activeTab === 'exams' && <><FileText size={18}/> My Results</>}
           
           {activeTab === 'gallery' && <GalleryTab isAdmin={false} />}}   */}
-          // ✅ CORRECT CODE
+        
           {activeTab === 'exams' && <><FileText size={18}/> My Results</>}
           {activeTab === 'fees' && <><IndianRupee size={18}/> My Fees</>}
           {activeTab === 'classlogs' && <><BookOpen size={18}/> Class Work & Docs</>}

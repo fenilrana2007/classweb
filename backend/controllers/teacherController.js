@@ -4,6 +4,7 @@ const Attendance = require('../models/Attendance');
 const Message = require('../models/Message');
 const bcrypt = require('bcryptjs');
 const ClassLog = require('../models/ClassLog');
+
 const getTeacherStats = async (req, res) => {
     try {
         const totalStudents = await User.countDocuments({ role: 'student' });
@@ -34,7 +35,6 @@ const addStudent = async (req, res) => {
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
-// THE FIX: This is the update function your frontend is looking for!
 const updateStudent = async (req, res) => {
     try {
         const { name, phone, std, batch, bgroup } = req.body;
@@ -57,7 +57,7 @@ const toggleBlockStudent = async (req, res) => {
         if (!student) return res.status(404).json({ message: 'Student not found' });
         student.isBlocked = !student.isBlocked; 
         await student.save();
-        res.json(student); // Send back updated student
+        res.json(student); 
     } catch (error) { res.status(500).json({ message: 'Server Error' }); }
 };
 
@@ -68,13 +68,62 @@ const deleteStudent = async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Server Error' }); }
 };
 
+// ==========================================
+// ATTENDANCE FUNCTIONS (FIXED & UPGRADED)
+// ==========================================
+
+// 1. Submit (Create OR Update)
 const submitAttendance = async (req, res) => {
     try {
         const { date, std, batch, records } = req.body;
-        const attendance = await Attendance.create({ date, std, batch, records, submittedBy: req.user._id });
-        res.status(201).json(attendance);
-    } catch (error) { res.status(500).json({ message: 'Server Error' }); }
+        
+        // SMART CHECK: Does this specific class log already exist?
+        let attendance = await Attendance.findOne({ date, std, batch });
+        
+        if (attendance) {
+            // UPDATE: Replace the old records with the new edited ones
+            attendance.records = records; 
+            await attendance.save();
+        } else {
+            // CREATE: Make a brand new entry
+            attendance = await Attendance.create({ date, std, batch, records, submittedBy: req.user._id });
+        }
+        res.status(200).json(attendance);
+    } catch (error) { res.status(500).json({ message: 'Server Error Saving Attendance' }); }
 };
+
+// 2. Fetch
+const getAttendance = async (req, res) => {
+    try {
+        const { date, std, batch } = req.query;
+        let query = { date };
+        if (std && std !== 'All') query.std = std;
+        if (batch && batch !== 'All') query.batch = batch;
+
+        const attendanceRecords = await Attendance.find(query).populate('records.studentId', 'name std batch');
+        res.json(attendanceRecords);
+    } catch (error) { res.status(500).json({ message: 'Server Error Fetching Attendance' }); }
+};
+
+// 3. Delete Specific Date
+const deleteAttendance = async (req, res) => {
+    try {
+        await Attendance.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Specific attendance record deleted' });
+    } catch (err) { res.status(500).json({ message: 'Error deleting attendance' }); }
+};
+
+// 4. Wipe All (Master Danger Zone)
+const wipeAllAttendance = async (req, res) => {
+    try {
+        await Attendance.deleteMany({});
+        res.json({ message: 'All attendance records wiped globally' });
+    } catch (err) { res.status(500).json({ message: 'Error wiping attendance' }); }
+};
+
+// ==========================================
+// MESSAGES & LOGS
+// ==========================================
 
 const sendMessage = async (req, res) => {
     try {
@@ -83,36 +132,14 @@ const sendMessage = async (req, res) => {
         res.status(201).json(message);
     } catch (error) { res.status(500).json({ message: 'Server Error' }); }
 };
-// Add this new function to fetch attendance
-const getAttendance = async (req, res) => {
-    try {
-        const { date, std, batch } = req.query;
-        
-        // Build our search filter
-        let query = { date };
-        if (std && std !== 'All') query.std = std;
-        if (batch && batch !== 'All') query.batch = batch;
 
-        // Find the record and "populate" the studentId so we get their actual names!
-        const attendanceRecords = await Attendance.find(query).populate('records.studentId', 'name std batch');
-        
-        res.json(attendanceRecords);
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error' });
-    }
-};
-// Fetch messages for the dashboard
 const getMessages = async (req, res) => {
     try {
-        // Fetch all messages, sort by newest first, and get the sender's name
-        const messages = await Message.find()
-            .populate('sender', 'name role')
-            .sort({ createdAt: -1 }); 
+        const messages = await Message.find().populate('sender', 'name role').sort({ createdAt: -1 }); 
         res.json(messages);
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error' });
-    }
+    } catch (error) { res.status(500).json({ message: 'Server Error' }); }
 };
+
 const createClassLog = async (req, res) => {
     try {
         const log = await ClassLog.create({ ...req.body, teacherId: req.user._id });
@@ -140,6 +167,10 @@ const deleteClassLog = async (req, res) => {
         res.json({ message: 'Log deleted' });
     } catch (err) { res.status(500).json({ message: 'Error deleting log' }); }
 };
+
 module.exports = {
-    getTeacherStats, getStudents, addStudent, updateStudent, toggleBlockStudent, deleteStudent, submitAttendance, sendMessage, getAttendance,getMessages, createClassLog, getClassLogs, updateClassLog, deleteClassLog
+    getTeacherStats, getStudents, addStudent, updateStudent, toggleBlockStudent, deleteStudent, 
+    submitAttendance, getAttendance, deleteAttendance, wipeAllAttendance, // <- Exported new functions
+    sendMessage, getMessages, 
+    createClassLog, getClassLogs, updateClassLog, deleteClassLog
 };

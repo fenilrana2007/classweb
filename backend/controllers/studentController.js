@@ -1,12 +1,10 @@
+// backend/controllers/studentController.js
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const Message = require('../models/Message');
 const bcrypt = require('bcryptjs'); 
-const Exam = require('../models/Exam'); // Make sure to import the Exam model at the top!
-const ClassLog = require('../models/ClassLog'); // Ensure you import the model at the top!
-// ==========================================
-// ADMIN / TEACHER FUNCTIONS (Manage Students)
-// ==========================================
+const Exam = require('../models/Exam');
+const ClassLog = require('../models/ClassLog');
 
 const addStudent = async (req, res) => {
     try {
@@ -19,64 +17,21 @@ const addStudent = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const newStudent = await User.create({
-            name, 
-            email, 
-            password: hashedPassword, 
-            phone, 
-            std, 
-            batch, 
-            bgroup,
-            role: 'student'
+            name, email, password: hashedPassword, phone, std, batch, bgroup, role: 'student'
         });
 
         newStudent.password = undefined; 
         res.status(201).json(newStudent);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error adding student' });
-    }
+    } catch (error) { res.status(500).json({ message: 'Server Error adding student' }); }
 };
 
 const getStudents = async (req, res) => {
     try {
-        const students = await User.find({ role: 'student' })
-                                   .select('-password') 
-                                   .sort({ name: 1 });
+        const students = await User.find({ role: 'student' }).select('-password').sort({ name: 1 });
         res.json(students);
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error fetching students' });
-    }
+    } catch (error) { res.status(500).json({ message: 'Server Error fetching students' }); }
 };
 
-// ==========================================
-// STUDENT PORTAL FUNCTIONS (Personal Data)
-// ==========================================
-
-// const getStudentDashboardData = async (req, res) => {
-//     try {
-//         // 1. Fetch Messages targeted to Students
-//         const messages = await Message.find({ recipientGroup: 'All Students' })
-//             .populate('sender', 'name role')
-//             .sort({ createdAt: -1 });
-
-//         // 2. Fetch the logged-in student's personal attendance history
-//         const attendanceDocs = await Attendance.find({ 'records.studentId': req.user._id })
-//             .sort({ date: -1 }); // Newest first
-            
-//         const myAttendance = attendanceDocs.map(doc => {
-//             const record = doc.records.find(r => r.studentId.toString() === req.user._id.toString());
-//             return { 
-//                 date: doc.date, 
-//                 status: record ? record.status : 'Unknown' 
-//             };
-//         });
-
-//         // Send it all back without the schedule data!
-//         res.json({ messages, attendance: myAttendance });
-//     } catch (error) {
-//         res.status(500).json({ message: 'Server Error loading dashboard' });
-//     }
-// };
 const getStudentDashboardData = async (req, res) => {
     try {
         // 1. Fetch Messages
@@ -84,24 +39,30 @@ const getStudentDashboardData = async (req, res) => {
             .populate('sender', 'name role')
             .sort({ createdAt: -1 });
 
-        // 2. Fetch Attendance
+        // 2. Fetch Attendance (THE FIX IS HERE)
         const attendanceDocs = await Attendance.find({ 'records.studentId': req.user._id })
             .sort({ date: -1 });
             
-        const myAttendance = attendanceDocs.map(doc => {
-            const record = doc.records.find(r => r.studentId.toString() === req.user._id.toString());
-            return { date: doc.date, status: record ? record.status : 'Unknown' };
+        let myAttendance = [];
+        attendanceDocs.forEach(doc => {
+            if (doc.records) {
+                // Dig into the array and find the exact student record
+                const record = doc.records.find(r => 
+                    r.studentId && r.studentId.toString() === req.user._id.toString()
+                );
+                if (record) {
+                    myAttendance.push({ date: doc.date, status: record.status });
+                }
+            }
         });
 
-        // 3. NEW: Fetch My Exams (Securely filtering by student ID)
+        // 3. Fetch My Exams 
         const myExams = await Exam.find({ 'marks.studentId': req.user._id })
             .sort({ examDate: -1 });
 
-        // Extract ONLY this student's marks from the exams
         const formattedExams = myExams.map(exam => {
             const myMarkRecord = exam.marks.find(m => m.studentId.toString() === req.user._id.toString());
             
-            // Calculate status exactly as the teacher sees it
             const passThreshold = exam.minPassMarks || 35;
             let status = 'Fail';
             if (myMarkRecord.isAbsent) status = 'Absent';
@@ -126,26 +87,23 @@ const getStudentDashboardData = async (req, res) => {
         res.status(500).json({ message: 'Server Error loading dashboard' });
     }
 };
+
 const deleteAllStudents = async (req, res) => {
     try {
-        // We only delete users with the 'student' role
         await User.deleteMany({ role: 'student' });
         res.json({ message: 'All student accounts have been permanently deleted.' });
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error during student cleanup' });
-    }
+    } catch (error) { res.status(500).json({ message: 'Server Error during student cleanup' }); }
 };
+
 const getMyClassLogs = async (req, res) => {
     try {
-        // Fetch logs that match the student's Standard, AND match either their specific batch OR "All Batches"
         const logs = await ClassLog.find({
             std: req.user.std,
             batch: { $in: [req.user.batch, 'All Batches'] }
-        }).sort({ date: -1 }); // Newest logs first
+        }).sort({ date: -1 }); 
         
         res.json(logs);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching class logs' });
-    }
+    } catch (error) { res.status(500).json({ message: 'Error fetching class logs' }); }
 };
+
 module.exports = { addStudent, getStudents, getStudentDashboardData, deleteAllStudents, getMyClassLogs };
