@@ -11,7 +11,7 @@ import {
 import ExamsTab from '../components/ExamsTab';
 import StudentsTab from '../components/StudentsTab';
 import FeesTab from '../components/FeesTab';
-import galleryTab from '../components/GalleryTab';
+import GalleryTab from '../components/GalleryTab';
 const AdminPortal = () => {
   const { user } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('overview');
