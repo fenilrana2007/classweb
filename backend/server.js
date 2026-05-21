@@ -42,7 +42,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
-const { createAchievement, getAchievements, updateAchievement, deleteAchievement } = require('../controllers/achievementController');
+const { createAchievement, getAchievements, updateAchievement, deleteAchievement } = require('../controllers/achievementController.js');
 
 // Load environment variables
 dotenv.config();
