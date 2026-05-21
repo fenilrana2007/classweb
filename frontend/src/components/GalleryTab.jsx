@@ -41,7 +41,6 @@ const GalleryTab = ({ isAdmin }) => {
     } catch (err) { console.error("Error fetching achievements"); }
   };
 
-  // --- SMART SINGLE UPLOAD FUNCTON ---
   const handleSingleUpload = async (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -82,11 +81,9 @@ const GalleryTab = ({ isAdmin }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Combine the separate images into the array the backend expects
     const submissionData = {
       ...formData,
-      photos: [profileImg, proofImg].filter(Boolean) // Removes empty strings
+      photos: [profileImg, proofImg].filter(Boolean)
     };
 
     try {
@@ -113,7 +110,6 @@ const GalleryTab = ({ isAdmin }) => {
       result: ach.result,
       customFields: ach.customFields || []
     });
-    // Restore images from array (Index 0 = Profile, Index 1 = Proof)
     setProfileImg(ach.photos?.[0] || '');
     setProofImg(ach.photos?.[1] || '');
     setViewMode('add');
@@ -142,7 +138,8 @@ const GalleryTab = ({ isAdmin }) => {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 animate-fade-in">
-      {/* HEADER */}
+      
+      {/* THE HEADER - Only show ONE copy, regardless of mobile/desktop */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-gray-100 pb-4 gap-4">
         <div>
           <h2 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
@@ -159,9 +156,10 @@ const GalleryTab = ({ isAdmin }) => {
         )}
       </div>
 
+      {/* CONDITIONAL RENDERING: Ensure ONLY ONE view renders at a time */}
       {viewMode === 'add' && isAdmin ? (
-        /* --- FORM VIEW --- */
         <form onSubmit={handleSubmit} className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-xl max-w-4xl mx-auto">
+          {/* ... (Keep all your existing form code here, nothing needs to change in the form itself) ... */}
           <div className="mb-6 pb-4 border-b border-gray-100">
             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><Star className="text-yellow-500" size={20}/> Achiever Details</h3>
           </div>
@@ -178,7 +176,6 @@ const GalleryTab = ({ isAdmin }) => {
             <div><label className="text-xs font-bold text-gray-500 uppercase">Key Subject Marks</label><input type="text" value={formData.subjectMarks} onChange={e => setFormData({...formData, subjectMarks: e.target.value})} placeholder="e.g. Math: 99/100" className="w-full p-3 border border-gray-200 rounded-lg mt-1 bg-gray-50 focus:bg-white" /></div>
           </div>
 
-          {/* DYNAMIC FIELDS */}
           <div className="mb-8 bg-gray-50 p-5 rounded-xl border border-gray-200">
             <div className="flex justify-between items-center mb-4">
               <label className="text-xs font-bold text-gray-600 uppercase">Extra Distinctions</label>
@@ -193,9 +190,7 @@ const GalleryTab = ({ isAdmin }) => {
             ))}
           </div>
 
-          {/* SMART IMAGE SEPARATION */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {/* 1. Profile Upload */}
             <div className="border-2 border-dashed border-gray-300 p-6 rounded-xl text-center bg-gray-50 relative">
               <label className="text-sm font-bold text-gray-700 uppercase block mb-2">Student Photograph</label>
               {!profileImg ? (
@@ -211,7 +206,6 @@ const GalleryTab = ({ isAdmin }) => {
               )}
             </div>
 
-            {/* 2. Proof Upload */}
             <div className="border-2 border-dashed border-gray-300 p-6 rounded-xl text-center bg-gray-50 relative">
               <label className="text-sm font-bold text-gray-700 uppercase block mb-2">Result / Marksheet (Proof)</label>
               {!proofImg ? (
@@ -237,10 +231,11 @@ const GalleryTab = ({ isAdmin }) => {
             {editingId && <button type="button" onClick={resetForm} className="px-8 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200">Cancel</button>}
           </div>
         </form>
-      ) : (
-        /* --- GALLERY VIEW --- */
+      ) : null}
+
+      {/* --- GALLERY VIEW --- ONLY RENDER THIS IF viewMode IS 'gallery' */}
+      {viewMode === 'gallery' ? (
         <div>
-          {/* Filters */}
           <div className="flex flex-col md:flex-row gap-4 mb-10 bg-gray-50 p-4 rounded-xl border border-gray-100">
             <div className="flex-1">
               <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Filter Year:</label>
@@ -258,7 +253,6 @@ const GalleryTab = ({ isAdmin }) => {
             </div>
           </div>
 
-          {/* Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-12 mt-12">
             {filteredGallery.length === 0 ? (
               <div className="col-span-full py-12 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
@@ -268,15 +262,12 @@ const GalleryTab = ({ isAdmin }) => {
             ) : (
               filteredGallery.map(ach => (
                 <div key={ach._id} className="relative bg-white rounded-2xl shadow-lg border border-gray-100 transition-all hover:-translate-y-1 hover:shadow-xl flex flex-col mt-8">
-                  
-                  {/* Decorative Banner */}
                   <div className="h-20 bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 rounded-t-2xl relative">
                      <div className="absolute top-3 right-3 bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-full border border-white/30">
                       {ach.academicYear}
                     </div>
                   </div>
 
-                  {/* Circular Profile Avatar (Overlapping) */}
                   <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
                     {ach.photos?.[0] ? (
                       <img src={ach.photos[0]} alt={ach.studentName} className="w-24 h-24 rounded-full border-4 border-white shadow-md object-cover bg-white" />
@@ -287,12 +278,10 @@ const GalleryTab = ({ isAdmin }) => {
                     )}
                   </div>
 
-                  {/* Card Content */}
                   <div className="pt-16 pb-6 px-6 flex-grow flex flex-col text-center">
                     <h3 className="text-xl font-extrabold text-gray-900 leading-tight">{ach.studentName}</h3>
                     <p className="text-sm font-medium text-gray-500 mt-1">{ach.std} <span className="mx-1">•</span> {ach.batch}</p>
                     
-                    {/* The Big Rank Badge */}
                     <div className="mt-4 mb-5 inline-block mx-auto bg-yellow-50 border border-yellow-200 px-4 py-2 rounded-lg">
                       <p className="font-bold text-yellow-700 flex items-center gap-2"><Award size={16}/> {ach.result}</p>
                     </div>
@@ -304,16 +293,13 @@ const GalleryTab = ({ isAdmin }) => {
                       ))}
                     </div>
 
-                    {/* Footer Actions */}
                     <div className="mt-auto pt-4 border-t border-gray-100 flex flex-col gap-3">
-                      {/* Proof Button (Only shows if photos[1] exists) */}
                       {ach.photos?.[1] && (
                         <a href={ach.photos[1]} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-2 bg-blue-50 text-blue-600 font-bold rounded-lg text-sm hover:bg-blue-100 transition-colors">
                           <ExternalLink size={16} /> View Official Result
                         </a>
                       )}
 
-                      {/* Admin Controls */}
                       {isAdmin && (
                         <div className="flex justify-center gap-2 w-full">
                           <button onClick={() => handleEdit(ach)} className="flex-1 py-1.5 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg text-sm font-bold flex justify-center items-center gap-1"><Edit size={14}/> Edit</button>
@@ -327,7 +313,8 @@ const GalleryTab = ({ isAdmin }) => {
             )}
           </div>
         </div>
-      )}
+      ) : null}
+
     </div>
   );
 };

@@ -120,7 +120,6 @@ const AdminPortal = () => {
           {activeTab === 'students' && <><GraduationCap size={18}/> Manage Students</>}
           {activeTab === 'exams' && <><FileText size={18}/> Examinations</>}
           {activeTab === 'fees' && <><IndianRupee size={18} /> Fee Management</>}
-          // inside tab rendering:
           {activeTab === 'gallery' && <GalleryTab isAdmin={true} />}
         </span>
         <button className="text-gray-900 focus:outline-none bg-gray-100 p-1 rounded">

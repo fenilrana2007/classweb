@@ -84,7 +84,7 @@ const StudentPortal = () => {
           {activeTab === 'noticeboard' && <><Bell size={18}/> Noticeboard</>}
           {activeTab === 'attendance' && <><CheckCircle size={18}/> My Attendance</>}
           {activeTab === 'exams' && <><FileText size={18}/> My Results</>}
-          // inside tab rendering:
+          
           {activeTab === 'gallery' && <GalleryTab isAdmin={false} />}
         </span>
         <button className="text-blue-600 focus:outline-none bg-blue-50 p-1 rounded">

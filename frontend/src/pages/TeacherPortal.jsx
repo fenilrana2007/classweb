@@ -88,7 +88,6 @@ const TeacherPortal = () => {
           {activeTab === 'exams' && <><FileText size={18}/> Examinations</>}
           {activeTab === 'fees' && <><IndianRupee size={18} /> Fee Management</>}
           {activeTab === 'class-logs' && <><BookOpen size={18} /> Class Logs</>}
-          // inside tab rendering:
           {activeTab === 'gallery' && <GalleryTab isAdmin={false} />}
         </span>
         <button className="text-purple-600 focus:outline-none bg-purple-50 p-1 rounded">
@@ -341,13 +340,13 @@ const AttendanceTab = ({ students }) => {
             <div><label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Batch</label><select value={fetchBatch} onChange={e => setFetchBatch(e.target.value)} className="w-full p-2 border rounded text-sm bg-white"><option value="All">All Batches</option><option value="Morning">Morning</option><option value="Evening">Evening</option></select></div>
             <div><label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Status Filter</label><select value={viewStatusFilter} onChange={e => setViewStatusFilter(e.target.value)} className="w-full p-2 border rounded text-sm border-purple-300 font-bold text-purple-700 bg-white"><option value="All">Show All</option><option value="Present">Present Only</option><option value="Absent">Absent Only</option></select></div>
             <div className="flex gap-2">
-              <button onClick={() => handleFetchAttendance()} disabled={isFetching} className="flex-1 bg-gray-900 text-white p-2 rounded-lg font-bold hover:bg-gray-800 h-[38px] text-sm shadow-md">{isFetching ? 'Loading...' : 'Fetch'}</button>
-              {currentAttendanceDocId && <button onClick={handleDeleteAttendance} className="bg-red-100 text-red-600 p-2 rounded-lg font-bold hover:bg-red-200 h-[38px] text-sm shadow-sm" title="Delete entire day's record"><Trash2 size={18}/></button>}
+              <button onClick={() => handleFetchAttendance()} disabled={isFetching} className="flex-1 bg-gray-900 text-white p-2 rounded-lg font-bold hover:bg-gray-800 `h-[38px]` text-sm shadow-md">{isFetching ? 'Loading...' : 'Fetch'}</button>
+              {currentAttendanceDocId && <button onClick={handleDeleteAttendance} className="bg-red-100 text-red-600 p-2 rounded-lg font-bold hover:bg-red-200 `h-[38px]` text-sm shadow-sm" title="Delete entire day's record"><Trash2 size={18}/></button>}
             </div>
           </div>
           
           <div className="overflow-x-auto border rounded-xl">
-            <table className="w-full text-left border-collapse min-w-[400px]">
+            <table className="w-full text-left border-collapse `min-w-[400px]`">
               <thead><tr className="bg-gray-100 border-b"><th className="p-3 text-xs md:text-sm">Student Name</th><th className="p-3 text-xs md:text-sm">Standard</th><th className="p-3 text-xs md:text-sm">Status (Click to toggle)</th></tr></thead>
               <tbody>
                 {displayedRecords.length === 0 ? (<tr><td colSpan="3" className="p-6 md:p-8 text-center text-sm text-gray-500">No records to display.</td></tr>) : (
