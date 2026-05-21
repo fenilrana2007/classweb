@@ -11,6 +11,7 @@ import {
 import ExamsTab from '../components/ExamsTab';
 import StudentsTab from '../components/StudentsTab';
 import FeesTab from '../components/FeesTab';
+import galleryTab from '../components/GalleryTab';
 const AdminPortal = () => {
   const { user } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('overview');
@@ -119,6 +120,8 @@ const AdminPortal = () => {
           {activeTab === 'students' && <><GraduationCap size={18}/> Manage Students</>}
           {activeTab === 'exams' && <><FileText size={18}/> Examinations</>}
           {activeTab === 'fees' && <><IndianRupee size={18} /> Fee Management</>}
+          // inside tab rendering:
+          {activeTab === 'gallery' && <GalleryTab isAdmin={true} />}
         </span>
         <button className="text-gray-900 focus:outline-none bg-gray-100 p-1 rounded">
           {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -134,6 +137,7 @@ const AdminPortal = () => {
         <TabButton active={activeTab === 'students'} onClick={() => handleTabSwitch('students')} icon={<GraduationCap size={18} />} text="Manage Students" />
         <TabButton active={activeTab === 'exams'} onClick={() => handleTabSwitch('exams')} icon={<FileText size={18} />} text="Examinations" />
         <TabButton active={activeTab === 'fees'} onClick={() => handleTabSwitch('fees')} icon={<IndianRupee size={18} />} text="Fee Management" />
+        <TabButton active={activeTab === 'gallery'} onClick={() => handleTabSwitch('gallery')} icon={<Image size={18} />} text="Gallery" />
       </div>
 
       {/* Tab Contents */}
@@ -144,7 +148,7 @@ const AdminPortal = () => {
       {activeTab === 'students' && <StudentsTab />} 
       {activeTab === 'exams' && <ExamsTab />} 
       {activeTab === 'fees' && <FeesTab />} 
-
+      {activeTab === 'gallery' && <GalleryTab isAdmin={true} />}
     </div>
   );
 };

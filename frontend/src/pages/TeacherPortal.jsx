@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import ClassLogTab from '../components/ClassLogTab';
-
+import GalleryTab from '../components/GalleryTab';
 import api from '../services/api';
 import { 
   BookOpen, LayoutDashboard, CheckSquare, MessageSquare, 
@@ -88,6 +88,8 @@ const TeacherPortal = () => {
           {activeTab === 'exams' && <><FileText size={18}/> Examinations</>}
           {activeTab === 'fees' && <><IndianRupee size={18} /> Fee Management</>}
           {activeTab === 'class-logs' && <><BookOpen size={18} /> Class Logs</>}
+          // inside tab rendering:
+          {activeTab === 'gallery' && <GalleryTab isAdmin={false} />}
         </span>
         <button className="text-purple-600 focus:outline-none bg-purple-50 p-1 rounded">
           {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -103,6 +105,7 @@ const TeacherPortal = () => {
         <TabButton active={activeTab === 'exams'} onClick={() => handleTabSwitch('exams')} icon={<FileText size={18} />} text="Examinations" />
         <TabButton active={activeTab === 'fees'} onClick={() => handleTabSwitch('fees')} icon={<IndianRupee size={18} />} text="Fee Management" />
         <TabButton active={activeTab === 'class-logs'} onClick={() => handleTabSwitch('class-logs')} icon={<BookOpen size={18} />} text="Class Logs" />
+        <TabButton active={activeTab === 'gallery'} onClick={() => handleTabSwitch('gallery')} icon={<Image size={18} />} text="Gallery" />
       </div>
 
       {/* Content Rendering */}
@@ -113,6 +116,7 @@ const TeacherPortal = () => {
       {activeTab === 'exams' && <ExamsTab />}
       {activeTab === 'fees' && <FeesTab />}
       {activeTab === 'class-logs' && <ClassLogTab />}
+      {activeTab === 'gallery' && <GalleryTab isAdmin={false} />}
     </div>
   );
 };

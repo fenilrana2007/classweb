@@ -6,7 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 // Added Menu and X icons for the mobile dropdown
 import { BookOpen, Bell, CheckCircle, Clock, FileText, Check, X, Filter, Menu ,IndianRupee, Printer} from 'lucide-react';
-
+import GalleryTab from '../components/GalleryTab';
 const StudentPortal = () => {
   const { user } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('noticeboard');
@@ -84,6 +84,8 @@ const StudentPortal = () => {
           {activeTab === 'noticeboard' && <><Bell size={18}/> Noticeboard</>}
           {activeTab === 'attendance' && <><CheckCircle size={18}/> My Attendance</>}
           {activeTab === 'exams' && <><FileText size={18}/> My Results</>}
+          // inside tab rendering:
+          {activeTab === 'gallery' && <GalleryTab isAdmin={false} />}
         </span>
         <button className="text-blue-600 focus:outline-none bg-blue-50 p-1 rounded">
           {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -97,6 +99,7 @@ const StudentPortal = () => {
         <TabButton active={activeTab === 'exams'} onClick={() => handleTabSwitch('exams')} icon={<FileText size={18} />} text="My Results" />
         <TabButton active={activeTab === 'fees'} onClick={() => handleTabSwitch('fees')} icon={<IndianRupee size={18} />} text="My Fees" />
         <TabButton active={activeTab === 'classlogs'} onClick={() => handleTabSwitch('classlogs')} icon={<BookOpen size={18} />} text="Class Work & Docs" />
+        <TabButton active={activeTab === 'gallery'} onClick={() => handleTabSwitch('gallery')} icon={<Image size={18} />} text="Gallery" />
       </div>
 
       {/* Tab Contents */}
@@ -106,6 +109,7 @@ const StudentPortal = () => {
       {/* {activeTab === 'fees' && <FeesTab fees={dashboardData.fees} />} */}
       {activeTab === 'fees' && <MyFeesTab />}
       {activeTab === 'classlogs' && <StudentClassLogsTab />}
+      {activeTab === 'gallery' && <GalleryTab isAdmin={false} />}
     </div>
   );
 };
