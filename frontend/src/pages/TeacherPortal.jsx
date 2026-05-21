@@ -9,7 +9,7 @@ import GalleryTab from '../components/GalleryTab';
 import api from '../services/api';
 import { 
   BookOpen, LayoutDashboard, CheckSquare, MessageSquare, 
-  Send, Bell, Clock, GraduationCap, FileText, Menu, X,IndianRupee,Printer ,Edit, Trash2
+  Send, Bell, Clock, GraduationCap, FileText, Menu, X,IndianRupee,Printer ,Edit, Trash2,Image
 } from 'lucide-react';
 import StudentsTab from '../components/StudentsTab'; 
 import ExamsTab from '../components/ExamsTab';
