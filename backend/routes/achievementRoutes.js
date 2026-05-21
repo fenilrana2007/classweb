@@ -9,5 +9,9 @@ const {
 } = require('../controllers/achievementController');
 
 // The frontend calls /api/achievements, so the base routes are just '/'
-app.use('/api/achievements', require('./routes/achievementRoutes'));
+router.get('/', protect, getAchievements); 
+router.post('/', protect, createAchievement); 
+router.put('/:id', protect, updateAchievement); 
+router.delete('/:id', protect, deleteAchievement);
+
 module.exports = router;
