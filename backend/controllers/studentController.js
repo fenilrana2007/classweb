@@ -34,19 +34,16 @@ const getStudents = async (req, res) => {
 
 const getStudentDashboardData = async (req, res) => {
     try {
-        // 1. Fetch Messages
         const messages = await Message.find({ recipientGroup: 'All Students' })
             .populate('sender', 'name role')
             .sort({ createdAt: -1 });
 
-        // 2. Fetch Attendance (THE FIX IS HERE)
         const attendanceDocs = await Attendance.find({ 'records.studentId': req.user._id })
             .sort({ date: -1 });
             
         let myAttendance = [];
         attendanceDocs.forEach(doc => {
             if (doc.records) {
-                // Dig into the array and find the exact student record
                 const record = doc.records.find(r => 
                     r.studentId && r.studentId.toString() === req.user._id.toString()
                 );
@@ -56,13 +53,11 @@ const getStudentDashboardData = async (req, res) => {
             }
         });
 
-        // 3. Fetch My Exams 
         const myExams = await Exam.find({ 'marks.studentId': req.user._id })
             .sort({ examDate: -1 });
 
         const formattedExams = myExams.map(exam => {
             const myMarkRecord = exam.marks.find(m => m.studentId.toString() === req.user._id.toString());
-            
             const passThreshold = exam.minPassMarks || 35;
             let status = 'Fail';
             if (myMarkRecord.isAbsent) status = 'Absent';

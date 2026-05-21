@@ -69,34 +69,31 @@ const deleteStudent = async (req, res) => {
 };
 
 // ==========================================
-// ATTENDANCE FUNCTIONS (FIXED & UPGRADED)
+// ATTENDANCE MANAGEMENT ENGINE
 // ==========================================
 
-// 1. Submit (Create OR Update)
 const submitAttendance = async (req, res) => {
     try {
         const { date, std, batch, records } = req.body;
-        
-        // SMART CHECK: Does this specific class log already exist?
         let attendance = await Attendance.findOne({ date, std, batch });
         
         if (attendance) {
-            // UPDATE: Replace the old records with the new edited ones
             attendance.records = records; 
             await attendance.save();
         } else {
-            // CREATE: Make a brand new entry
             attendance = await Attendance.create({ date, std, batch, records, submittedBy: req.user._id });
         }
         res.status(200).json(attendance);
     } catch (error) { res.status(500).json({ message: 'Server Error Saving Attendance' }); }
 };
 
-// 2. Fetch
 const getAttendance = async (req, res) => {
     try {
         const { date, std, batch } = req.query;
-        let query = { date };
+        let query = {};
+        
+        // UPGRADE: If date is 'All', do not filter by date. Fetch the whole ledger instead.
+        if (date && date !== 'All') query.date = date;
         if (std && std !== 'All') query.std = std;
         if (batch && batch !== 'All') query.batch = batch;
 
@@ -105,7 +102,6 @@ const getAttendance = async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Server Error Fetching Attendance' }); }
 };
 
-// 3. Delete Specific Date
 const deleteAttendance = async (req, res) => {
     try {
         await Attendance.findByIdAndDelete(req.params.id);
@@ -113,7 +109,6 @@ const deleteAttendance = async (req, res) => {
     } catch (err) { res.status(500).json({ message: 'Error deleting attendance' }); }
 };
 
-// 4. Wipe All (Master Danger Zone)
 const wipeAllAttendance = async (req, res) => {
     try {
         await Attendance.deleteMany({});
@@ -170,7 +165,7 @@ const deleteClassLog = async (req, res) => {
 
 module.exports = {
     getTeacherStats, getStudents, addStudent, updateStudent, toggleBlockStudent, deleteStudent, 
-    submitAttendance, getAttendance, deleteAttendance, wipeAllAttendance, // <- Exported new functions
+    submitAttendance, getAttendance, deleteAttendance, wipeAllAttendance, 
     sendMessage, getMessages, 
     createClassLog, getClassLogs, updateClassLog, deleteClassLog
 };

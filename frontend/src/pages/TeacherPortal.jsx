@@ -1,6 +1,3 @@
-
-
-// export default TeacherPortal;
 // src/pages/TeacherPortal.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
@@ -9,29 +6,27 @@ import GalleryTab from '../components/GalleryTab';
 import api from '../services/api';
 import { 
   BookOpen, LayoutDashboard, CheckSquare, MessageSquare, 
-  Send, Bell, Clock, GraduationCap, FileText, Menu, X,IndianRupee,Printer ,Edit, Trash2,Image
+  Send, Bell, Clock, GraduationCap, FileText, Menu, X, IndianRupee, Printer, Edit, Trash2, Image, Download
 } from 'lucide-react';
 import StudentsTab from '../components/StudentsTab'; 
 import ExamsTab from '../components/ExamsTab';
 import FeesTab from '../components/FeesTab';
+
 const standardOptions = [
   "1st Std", "2nd Std", "3rd Std", "4th Std", "5th Std", "6th Std", 
   "7th Std", "8th Std", "9th Std", "10th Std", "11th Commerce", "12th Commerce"
 ];
+
 const TeacherPortal = () => {
   const { user } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('overview');
-  
-  // NEW: State to handle the mobile menu toggle
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  // Master State
   const [stats, setStats] = useState({ batches: 0, totalStudents: 0, classesToday: 0 });
   const [students, setStudents] = useState([]); 
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initial Data Fetch
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -55,7 +50,6 @@ const TeacherPortal = () => {
   if (!user || user.role !== 'teacher') return <div className="p-10 text-center text-red-600 font-bold mt-20">Access Denied. Faculty Only.</div>;
   if (isLoading) return <div className="p-10 text-center mt-20 animate-pulse font-bold text-purple-600">Loading Portal Data...</div>;
 
-  // Helper function to handle tab switching and closing the menu on mobile
   const handleTabSwitch = (tabName) => {
     setActiveTab(tabName);
     setIsMobileMenuOpen(false);
@@ -63,8 +57,7 @@ const TeacherPortal = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-      
-      {/* Header - Made responsive */}
+      {/* Header */}
       <div className="bg-purple-700 rounded-2xl p-5 md:p-8 text-white shadow-lg mb-6 md:mb-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
         <div className="flex justify-between items-center">
           <div>
@@ -78,7 +71,7 @@ const TeacherPortal = () => {
         </div>
       </div>
 
-      {/* --- MOBILE MENU TOGGLE BUTTON --- */}
+      {/* MOBILE MENU TOGGLE BUTTON */}
       <div className="md:hidden flex justify-between items-center mb-4 bg-white p-3 rounded-lg border border-gray-200 shadow-sm cursor-pointer" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
         <span className="font-bold text-gray-700 flex items-center gap-2">
           {activeTab === 'overview' && <><LayoutDashboard size={18}/> Noticeboard</>}
@@ -95,7 +88,7 @@ const TeacherPortal = () => {
         </button>
       </div>
 
-      {/* Tabs - Hidden on mobile unless menu is open */}
+      {/* Tabs */}
       <div className={`${isMobileMenuOpen ? 'flex flex-col' : 'hidden'} md:flex md:flex-row flex-wrap gap-2 mb-6 md:mb-8 md:border-b md:border-gray-200 pb-2 md:pb-4 transition-all duration-300`}>
         <TabButton active={activeTab === 'overview'} onClick={() => handleTabSwitch('overview')} icon={<LayoutDashboard size={18} />} text="Noticeboard" />
         <TabButton active={activeTab === 'students'} onClick={() => handleTabSwitch('students')} icon={<GraduationCap size={18} />} text="Manage Students" />
@@ -120,7 +113,6 @@ const TeacherPortal = () => {
   );
 };
 
-// Updated TabButton to be full-width on mobile
 const TabButton = ({ active, onClick, icon, text }) => (
   <button onClick={onClick} className={`w-full md:w-auto flex justify-start md:justify-center items-center gap-2 px-4 py-3 md:py-2 rounded-lg font-medium transition-colors ${active ? 'bg-purple-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}>
     {icon} {text}
@@ -128,13 +120,11 @@ const TabButton = ({ active, onClick, icon, text }) => (
 );
 
 /* =========================================================================
-   1. OVERVIEW TAB (Noticeboard Feed)
+   1. OVERVIEW TAB
    ========================================================================= */
 const OverviewTab = ({ messages }) => (
   <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 animate-fade-in">
-    <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
-      <Bell className="text-purple-600" /> Recent Announcements
-    </h2>
+    <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2"><Bell className="text-purple-600" /> Recent Announcements</h2>
     <div className="space-y-4">
       {messages.length === 0 ? (
         <div className="p-6 md:p-8 text-center text-gray-500 bg-gray-50 border border-dashed rounded-xl">No new messages or announcements.</div>
@@ -143,17 +133,13 @@ const OverviewTab = ({ messages }) => (
           <div key={msg._id} className="bg-purple-50/50 rounded-xl border border-purple-100 p-4 md:p-5 hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-3 border-b border-purple-100 pb-3">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold shrink-0">
-                  {msg.sender?.name ? msg.sender.name.charAt(0).toUpperCase() : 'U'}
-                </div>
+                <div className="h-10 w-10 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold shrink-0">{msg.sender?.name ? msg.sender.name.charAt(0).toUpperCase() : 'U'}</div>
                 <div>
                   <p className="font-bold text-sm md:text-base text-gray-900">{msg.sender?.name || 'Unknown User'}</p>
                   <p className="text-[10px] md:text-xs font-medium text-purple-600 uppercase tracking-wider">To: {msg.recipientGroup}</p>
                 </div>
               </div>
-              <span className="text-[10px] md:text-xs text-gray-500 bg-white px-2 py-1 rounded-md border flex items-center gap-1 shrink-0">
-                <Clock size={12}/> {new Date(msg.createdAt).toLocaleDateString()}
-              </span>
+              <span className="text-[10px] md:text-xs text-gray-500 bg-white px-2 py-1 rounded-md border flex items-center gap-1 shrink-0"><Clock size={12}/> {new Date(msg.createdAt).toLocaleDateString()}</span>
             </div>
             <p className="text-sm md:text-base text-gray-800 whitespace-pre-wrap">{msg.content}</p>
           </div>
@@ -164,27 +150,23 @@ const OverviewTab = ({ messages }) => (
 );
 
 /* =========================================================================
-   2. ATTENDANCE TAB (With Full CRUD & Real-Time Updates)
+   2. ATTENDANCE TAB (WITH SHEET EXPORTS)
    ========================================================================= */
 const AttendanceTab = ({ students }) => {
   const [tabMode, setTabMode] = useState('record');
   
-  // Record State
   const [addDate, setAddDate] = useState(new Date().toISOString().split('T')[0]);
   const [addStd, setAddStd] = useState('All');
   const [addBatch, setAddBatch] = useState('All');
   const [markMode, setMarkMode] = useState('markPresent');
   const [selectedIds, setSelectedIds] = useState(new Set());
 
-  // View & Edit State
   const [fetchDate, setFetchDate] = useState(new Date().toISOString().split('T')[0]);
   const [fetchStd, setFetchStd] = useState('All');
   const [fetchBatch, setFetchBatch] = useState('All');
   const [viewStatusFilter, setViewStatusFilter] = useState('All');
   const [viewData, setViewData] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
-
-  // The actual MongoDB Document ID of the attendance record (needed for Edit/Delete)
   const [currentAttendanceDocId, setCurrentAttendanceDocId] = useState(null); 
 
   const filteredStudents = students.filter(s => (addStd === 'All' || s.std === addStd) && (addBatch === 'All' || s.batch === addBatch));
@@ -195,7 +177,6 @@ const AttendanceTab = ({ students }) => {
     setSelectedIds(newSet);
   };
 
-  // --- SAVE NEW ATTENDANCE ---
   const handleSubmitAttendance = async () => {
     if (filteredStudents.length === 0) return alert("No students found in this class/batch!");
     const records = filteredStudents.map(student => {
@@ -208,7 +189,6 @@ const AttendanceTab = ({ students }) => {
       await api.post('/teacher/attendance', { date: addDate, std: addStd, batch: addBatch, records });
       alert(`Attendance for ${addDate} Saved Successfully!`);
       setSelectedIds(new Set()); 
-      // Switch to View Mode and Auto-Fetch the new data!
       setFetchDate(addDate);
       setFetchStd(addStd);
       setFetchBatch(addBatch);
@@ -217,7 +197,6 @@ const AttendanceTab = ({ students }) => {
     } catch (err) { alert("Failed to save attendance."); }
   };
 
-  // --- FETCH PAST ATTENDANCE ---
   const handleFetchAttendance = async (overrideDate, overrideStd, overrideBatch) => {
     setIsFetching(true);
     const d = overrideDate || fetchDate;
@@ -232,7 +211,7 @@ const AttendanceTab = ({ students }) => {
       let docId = null;
 
       if (res.data && res.data.length > 0) {
-        docId = res.data[0]._id; // Store Document ID for CRUD
+        docId = res.data[0]._id;
         res.data.forEach(recordDoc => recordDoc.records.forEach(r => {
           if (r.status === 'Present' && r.studentId) {
             const studentIdStr = typeof r.studentId === 'object' ? r.studentId._id : r.studentId;
@@ -257,45 +236,49 @@ const AttendanceTab = ({ students }) => {
     finally { setIsFetching(false); }
   };
 
-  // --- TOGGLE A SINGLE STUDENT'S STATUS (EDIT) ---
   const handleToggleSingleStatus = async (studentId, currentStatus) => {
     if (!currentAttendanceDocId) return alert("No master record found to update. Please save attendance first.");
-    
     const newStatus = currentStatus === 'Present' ? 'Absent' : 'Present';
-    
-    // Optimistic UI Update
     setViewData(viewData.map(r => r.studentId === studentId ? { ...r, status: newStatus } : r));
 
     try {
-      // Create the updated records array
       const updatedRecords = viewData.map(r => ({
         studentId: r.studentId,
         status: r.studentId === studentId ? newStatus : r.status
       }));
-
-      // Send to backend (Assuming your backend uses the same endpoint with an upsert/update logic)
-      await api.post('/teacher/attendance', { 
-        date: fetchDate, std: fetchStd, batch: fetchBatch, records: updatedRecords 
-      });
-      
+      await api.post('/teacher/attendance', { date: fetchDate, std: fetchStd, batch: fetchBatch, records: updatedRecords });
     } catch (err) {
       alert("Failed to update status.");
-      handleFetchAttendance(); // Revert on failure
+      handleFetchAttendance(); 
     }
   };
 
-  // --- DELETE ENTIRE DAY'S RECORD ---
   const handleDeleteAttendance = async () => {
     if (!currentAttendanceDocId) return;
     if (window.confirm(`CRITICAL: Are you sure you want to permanently delete the attendance record for ${fetchDate}?`)) {
       try {
-        // You will need to add this route to your backend! (router.delete('/attendance/:id'))
         await api.delete(`/teacher/attendance/${currentAttendanceDocId}`);
         alert("Attendance Record Deleted.");
         setViewData([]);
         setCurrentAttendanceDocId(null);
       } catch (err) { alert("Failed to delete record."); }
     }
+  };
+
+  // --- LOCAL VIEW SHEET EXPORT ---
+  const handleExportCurrentView = () => {
+    if (viewData.length === 0) return alert("No fetched records available to export.");
+    let csv = "Student Name,Standard,Batch,Status\n";
+    viewData.forEach(r => {
+      csv += `"${r.name}","${r.std}","${r.batch}","${r.status}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `Attendance_Report_${fetchDate}_${fetchStd}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const displayedRecords = viewData.filter(r => viewStatusFilter === 'All' || r.status === viewStatusFilter);
@@ -309,7 +292,6 @@ const AttendanceTab = ({ students }) => {
 
       {tabMode === 'record' && (
         <div className="animate-fade-in">
-          {/* ... Keep your existing Record mode form here exactly as it is ... */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-6 bg-purple-50 p-3 md:p-4 rounded-xl border border-purple-100">
             <div><label className="block text-xs md:text-sm font-bold text-purple-900 mb-1">Select Date</label><input type="date" value={addDate} onChange={(e) => setAddDate(e.target.value)} className="w-full p-2 border rounded text-sm" /></div>
             <div><label className="block text-xs md:text-sm font-bold text-purple-900 mb-1">Standard</label><select value={addStd} onChange={e => setAddStd(e.target.value)} className="w-full p-2 border rounded text-sm bg-white"><option value="All">All Standards</option>{standardOptions.map(std => <option key={std} value={std}>{std}</option>)}</select></div>
@@ -334,19 +316,20 @@ const AttendanceTab = ({ students }) => {
 
       {tabMode === 'view' && (
         <div className="animate-fade-in">
-           <div className="grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-4 mb-6 bg-gray-50 p-3 md:p-4 rounded-xl border border-gray-200 items-end">
+           <div className="grid grid-cols-1 md:grid-cols-6 gap-3 md:gap-4 mb-6 bg-gray-50 p-3 md:p-4 rounded-xl border border-gray-200 items-end">
             <div><label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Date</label><input type="date" value={fetchDate} onChange={(e) => setFetchDate(e.target.value)} className="w-full p-2 border rounded text-sm" /></div>
             <div><label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Standard</label><select value={fetchStd} onChange={e => setFetchStd(e.target.value)} className="w-full p-2 border rounded text-sm bg-white"><option value="All">All Standards</option>{standardOptions.map(std => <option key={std} value={std}>{std}</option>)}</select></div>
             <div><label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Batch</label><select value={fetchBatch} onChange={e => setFetchBatch(e.target.value)} className="w-full p-2 border rounded text-sm bg-white"><option value="All">All Batches</option><option value="Morning">Morning</option><option value="Evening">Evening</option></select></div>
-            <div><label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Status Filter</label><select value={viewStatusFilter} onChange={e => setViewStatusFilter(e.target.value)} className="w-full p-2 border rounded text-sm border-purple-300 font-bold text-purple-700 bg-white"><option value="All">Show All</option><option value="Present">Present Only</option><option value="Absent">Absent Only</option></select></div>
-            <div className="flex gap-2">
-              <button onClick={() => handleFetchAttendance()} disabled={isFetching} className="flex-1 bg-gray-900 text-white p-2 rounded-lg font-bold hover:bg-gray-800 `h-[38px]` text-sm shadow-md">{isFetching ? 'Loading...' : 'Fetch'}</button>
-              {currentAttendanceDocId && <button onClick={handleDeleteAttendance} className="bg-red-100 text-red-600 p-2 rounded-lg font-bold hover:bg-red-200 `h-[38px]` text-sm shadow-sm" title="Delete entire day's record"><Trash2 size={18}/></button>}
+            <div><label className="block text-xs md:text-sm font-bold text-gray-700 mb-1">Status</label><select value={viewStatusFilter} onChange={e => setViewStatusFilter(e.target.value)} className="w-full p-2 border rounded text-sm border-purple-300 font-bold text-purple-700 bg-white"><option value="All">Show All</option><option value="Present">Present Only</option><option value="Absent">Absent Only</option></select></div>
+            <button onClick={() => handleFetchAttendance()} disabled={isFetching} className="bg-gray-900 text-white p-2 rounded-lg font-bold hover:bg-gray-800 h-[38px] text-sm shadow-md">{isFetching ? 'Loading...' : 'Fetch'}</button>
+            <div className="flex gap-1 h-[38px]">
+              <button onClick={handleExportCurrentView} className="flex-1 bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg font-bold text-sm shadow-sm flex items-center justify-center" title="Export Current List to Excel"><Download size={18}/></button>
+              {currentAttendanceDocId && <button onClick={handleDeleteAttendance} className="bg-red-100 text-red-600 p-2 rounded-lg font-bold hover:bg-red-200 text-sm shadow-sm flex items-center justify-center" title="Delete entire day's record"><Trash2 size={18}/></button>}
             </div>
           </div>
           
-          <div className="overflow-x-auto border rounded-xl">
-            <table className="w-full text-left border-collapse `min-w-[400px]`">
+          <div className="overflow-x-auto border rounded-xl bg-white">
+            <table className="w-full text-left border-collapse min-w-[400px]">
               <thead><tr className="bg-gray-100 border-b"><th className="p-3 text-xs md:text-sm">Student Name</th><th className="p-3 text-xs md:text-sm">Standard</th><th className="p-3 text-xs md:text-sm">Status (Click to toggle)</th></tr></thead>
               <tbody>
                 {displayedRecords.length === 0 ? (<tr><td colSpan="3" className="p-6 md:p-8 text-center text-sm text-gray-500">No records to display.</td></tr>) : (
@@ -355,13 +338,7 @@ const AttendanceTab = ({ students }) => {
                       <td className="p-3 text-sm font-bold text-gray-900">{record.name}</td>
                       <td className="p-3 text-xs md:text-sm text-gray-600">{record.std} • {record.batch}</td>
                       <td className="p-3">
-                        <button 
-                          onClick={() => handleToggleSingleStatus(record.studentId, record.status)}
-                          title="Click to change status"
-                          className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-sm transition-transform hover:scale-105 ${record.status === 'Present' ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
-                        >
-                          {record.status} 
-                        </button>
+                        <button onClick={() => handleToggleSingleStatus(record.studentId, record.status)} title="Click to change status" className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-sm transition-transform hover:scale-105 ${record.status === 'Present' ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}>{record.status}</button>
                       </td>
                     </tr>
                   ))
@@ -376,7 +353,7 @@ const AttendanceTab = ({ students }) => {
 };
 
 /* =========================================================================
-   3. MESSAGES TAB (Compose Broadcasts)
+   3. MESSAGES TAB
    ========================================================================= */
 const MessagesTab = ({ messages, setMessages, user }) => {
   const [newContent, setNewContent] = useState('');
