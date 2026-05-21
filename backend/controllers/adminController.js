@@ -3,31 +3,39 @@ const User = require('../models/User');
 const Message = require('../models/Message');
 const Attendance = require('../models/Attendance');
 const ClassLog = require('../models/ClassLog');
-const Exam = require('../models/Exam'); 
-const Fee = require('../models/Fee'); 
-const Achievement = require('../models/Achievement');
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 
-// 1. Get Platform-Wide Stats
+// Failsafe model loading system to avoid server startup path crashes if a model is missing
+const loadModelSafely = (name) => {
+    try { 
+        return mongoose.model(name); 
+    } catch(e) { 
+        return null; 
+    }
+};
+
+// ==========================================
+// 1. DASHBOARD STATS
+// ==========================================
 const getAdminStats = async (req, res) => {
     try {
         const totalStudents = await User.countDocuments({ role: 'student' });
         const totalTeachers = await User.countDocuments({ role: 'teacher' });
         
+        // Classes today counter (Set to 0 as placeholder for structural consistency)
         const classesToday = 0; 
         
-        res.json({ 
-            totalStudents, 
-            totalTeachers, 
-            classesToday 
-        });
+        res.json({ totalStudents, totalTeachers, classesToday });
     } catch (error) {
         console.error("Admin Stats Error:", error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
 
-// 2. Manage Teachers (Fetch, Add, Block, Delete, Update)
+// ==========================================
+// 2. FACULTY MANAGEMENT (CRUD)
+// ==========================================
 const getTeachers = async (req, res) => {
     try {
         const teachers = await User.find({ role: 'teacher' }).select('-password');
@@ -47,8 +55,24 @@ const addTeacher = async (req, res) => {
         const newTeacher = await User.create({
             name, email, phone, password: hashedPassword, role: 'teacher'
         });
+        
+        newTeacher.password = undefined;
         res.status(201).json(newTeacher);
     } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+const updateTeacher = async (req, res) => {
+    try {
+        const { name, email, phone } = req.body;
+        const updatedTeacher = await User.findByIdAndUpdate(
+            req.params.id,
+            { name, email, phone },
+            { new: true } 
+        ).select('-password');
+
+        if (!updatedTeacher) return res.status(404).json({ message: 'Teacher not found' });
+        res.json(updatedTeacher);
+    } catch (error) { res.status(500).json({ message: 'Server Error' }); }
 };
 
 const toggleBlockUser = async (req, res) => {
@@ -68,21 +92,9 @@ const deleteUser = async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Server Error' }); }
 };
 
-const updateTeacher = async (req, res) => {
-    try {
-        const { name, email, phone } = req.body;
-        const updatedTeacher = await User.findByIdAndUpdate(
-            req.params.id,
-            { name, email, phone },
-            { new: true } 
-        ).select('-password');
-
-        if (!updatedTeacher) return res.status(404).json({ message: 'Teacher not found' });
-        res.json(updatedTeacher);
-    } catch (error) { res.status(500).json({ message: 'Server Error' }); }
-};
-
-// 3. Admin Noticeboard & Broadcast System
+// ==========================================
+// 3. COMMUNICATIONS & AUDITS
+// ==========================================
 const getMessages = async (req, res) => {
     try {
         const messages = await Message.find().populate('sender', 'name role').sort({ createdAt: -1 });
@@ -98,77 +110,104 @@ const sendMessage = async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Server Error' }); }
 };
 
+const getGlobalClassLogs = async (req, res) => {
+    try {
+        const logs = await ClassLog.find().sort({ date: -1 });
+        res.json(logs);
+    } catch (error) { res.status(500).json({ message: 'Server Error fetching logs' }); }
+};
+
 // =========================================================================
-// SYSTEM PURGE SUB-ENGINE OPERATIONS (THE 6 SECTOR WIPES)
+// 4. THE 6 DANGER ZONE ATOMIC DATA WIPES
 // =========================================================================
 
-// OPTION 1: GLOBAL SYSTEM RESET (MODIFIED: GALLERY / ACHIEVEMENT DATA EXCLUDED)
+// OPTION 1: COMPLETE RESET (MODIFIED: EXCLUDES GALLERY DATA COLLECTION)
 const purgeSystemAll = async (req, res) => {
     try {
-        await Promise.all([
-            User.deleteMany({ role: 'student' }), // Drops student accounts cleanly
-            Attendance.deleteMany({}),           // Drops global attendance logs
-            Message.deleteMany({}),              // Drops noticeboard feeds
-            Exam.deleteMany({}),                 // Drops all academic exams records
-            ClassLog.deleteMany({})              // Drops teacher daily class work updates
-            // Achievement.deleteMany({}) <--- EXCLUDED: Gallery is safely kept!
-        ]);
-        res.json({ message: 'Global system reset complete. Faculty accounts and Achievement Gallery items preserved successfully.' });
-    } catch (err) {
-        console.error("Global Purge Error:", err);
-        res.status(500).json({ message: 'Server Error during global cleanup reset' });
+        const Exam = loadModelSafely('Exam');
+        const Fee = loadModelSafely('Fee') || loadModelSafely('Payment');
+
+        await User.deleteMany({ role: 'student' });
+        await Attendance.deleteMany({});
+        await Message.deleteMany({});
+        await ClassLog.deleteMany({});
+        if (Exam) await Exam.deleteMany({});
+        if (Fee) await Fee.deleteMany({});
+        
+        // Gallery (Achievement) collection is skipped here to preserve "Hall of Fame"
+        res.json({ message: 'Complete platform reset processed successfully. Gallery & Staff protected.' });
+    } catch (err) { 
+        console.error("System Purge Error:", err);
+        res.status(500).json({ message: 'Error executing global database purges' }); 
     }
 };
 
-// OPTION 3: INDEPENDENT NOTICEBOARD FEED CLEAR
+// OPTION 2: ATTENDANCE WIPE
+const wipeAttendance = async (req, res) => {
+    try {
+        await Attendance.deleteMany({});
+        res.json({ message: 'Attendance records erased completely.' });
+    } catch (err) { res.status(500).json({ message: 'Error purging attendance logs' }); }
+};
+
+// OPTION 3: BROADCASTS BULLETINS WIPE
 const deleteAllMessages = async (req, res) => {
     try {
         await Message.deleteMany({}); 
-        res.json({ message: 'All platform messages have been permanently deleted.' });
-    } catch (error) { 
-        res.status(500).json({ message: 'Server Error' }); 
-    }
+        res.json({ message: 'Noticeboard log dropped successfully.' });
+    } catch (error) { res.status(500).json({ message: 'Server Error cleaning notices' }); }
 };
 
-// OPTION 4: INDEPENDENT ACADEMIC EXAMS CLEANUP
+// OPTION 4: ACADEMIC EXAMS DATA PURGE
 const wipeExams = async (req, res) => {
     try {
-        await Exam.deleteMany({});
-        res.json({ message: 'All student examination records and marks report sets deleted.' });
-    } catch (error) {
-        console.error("Wipe Exams Error:", error);
-        res.status(500).json({ message: 'Server Error wiping examinations data' });
-    }
+        const Exam = loadModelSafely('Exam');
+        if (Exam) {
+            await Exam.deleteMany({});
+            return res.json({ message: 'All examinations collection dropped successfully.' });
+        }
+        res.status(404).json({ message: 'Exam model node registration not located.' });
+    } catch (error) { res.status(500).json({ message: 'Server Error purging exams history logs' }); }
 };
 
-// OPTION 5: INDEPENDENT FINANCIAL SNAPSHOT FLUSH
+// OPTION 5: LEDGER BALANCE FINANCIAL WIPE
 const wipeFees = async (req, res) => {
     try {
-        await Fee.deleteMany({});
-        res.json({ message: 'All transaction ledger collections and generated receipts flushed cleanly.' });
-    } catch (error) {
-        console.error("Wipe Fees Error:", error);
-        res.status(500).json({ message: 'Server Error flushing financial files database logs' });
-    }
+        const Fee = loadModelSafely('Fee') || loadModelSafely('Payment');
+        if (Fee) {
+            await Fee.deleteMany({});
+            return res.json({ message: 'All student transaction structures purged successfully.' });
+        }
+        res.status(404).json({ message: 'Financial schema collection layer not located.' });
+    } catch (error) { res.status(500).json({ message: 'Server Error clearing accounting nodes' }); }
 };
 
-// OPTION 6: INDEPENDENT GALLERY MASTER RESET
+// OPTION 6: INDEPENDENT HALL OF FAME GALLERY RESET
 const wipeGallery = async (req, res) => {
     try {
-        await Achievement.deleteMany({});
-        res.json({ message: 'Hall of Fame student gallery has been reset.' });
-    } catch (error) {
-        console.error("Wipe Gallery Error:", error);
-        res.status(500).json({ message: 'Server Error resetting achievement data records' });
-    }
+        const Achievement = loadModelSafely('Achievement');
+        if (Achievement) {
+            await Achievement.deleteMany({});
+            return res.json({ message: 'Hall of Fame student gallery has been reset.' });
+        }
+        res.status(404).json({ message: 'Achievement model node registration not located.' });
+    } catch (error) { res.status(500).json({ message: 'Server Error resetting achievement records' }); }
 };
 
 module.exports = {
-    getAdminStats, getTeachers, addTeacher, toggleBlockUser, deleteUser, updateTeacher, 
-    getMessages, sendMessage, 
-    purgeSystemAll,    // Option 1
-    deleteAllMessages, // Option 3
-    wipeExams,         // Option 4
-    wipeFees,          // Option 5
-    wipeGallery        // Option 6
+    getAdminStats, 
+    getTeachers, 
+    addTeacher, 
+    updateTeacher, 
+    toggleBlockUser, 
+    deleteUser, 
+    getMessages, 
+    sendMessage, 
+    getGlobalClassLogs,
+    purgeSystemAll,    // Purge Option 1
+    wipeAttendance,    // Purge Option 2
+    deleteAllMessages, // Purge Option 3
+    wipeExams,         // Purge Option 4
+    wipeFees,          // Purge Option 5
+    wipeGallery        // Purge Option 6
 };

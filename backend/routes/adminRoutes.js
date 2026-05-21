@@ -5,40 +5,48 @@ const {
     getAdminStats, 
     getTeachers, 
     addTeacher, 
+    updateTeacher, 
     toggleBlockUser, 
     deleteUser, 
-    updateTeacher, 
     getMessages, 
     sendMessage, 
+    getGlobalClassLogs,
     purgeSystemAll,
+    wipeAttendance,
     deleteAllMessages,
     wipeExams,
     wipeFees,
     wipeGallery
 } = require('../controllers/adminController');
+
+// Ensure you import your authentication middleware correctly
 const { protect, adminOnly } = require('../middlewares/authMiddleware');
 
-// Route Security Guard
+// Route Security Guard: Everything below this requires Admin privileges
+// Fallback to teacherOrAdmin if adminOnly is not defined in your middleware
 router.use(protect, adminOnly || require('../middlewares/authMiddleware').teacherOrAdmin);
 
-// Core Administrative Endpoints
+// =========================================================================
+// STANDARD ADMINISTRATIVE ENDPOINTS
+// =========================================================================
 router.get('/stats', getAdminStats);
 router.get('/teachers', getTeachers);
 router.post('/teachers', addTeacher);
+router.put('/teachers/:id', updateTeacher);
 router.put('/users/:id/block', toggleBlockUser);
 router.delete('/users/:id', deleteUser);
-router.put('/teachers/:id', updateTeacher);
 router.get('/messages', getMessages);
 router.post('/messages', sendMessage);
+router.get('/class-logs', getGlobalClassLogs);
 
 // =========================================================================
-// THE MULTI-PURGE PURGATORY CONTROL INTERCEPT ROUTERS
+// THE MULTI-PURGE CONTROL INTERCEPT ROUTERS
 // =========================================================================
-
-router.delete('/students/all-cleanup', purgeSystemAll);        // Option 1: Global Wipe (Keeps Gallery Safe)
-router.delete('/messages', deleteAllMessages);                 // Option 3: Noticeboard Wipe
-router.delete('/exams-wipe-all', wipeExams);                   // Option 4: Academic Exams Wipe
-router.delete('/fees-wipe-all', wipeFees);                     // Option 5: Financial Fee Ledger Wipe
-router.delete('/achievements-wipe-all', wipeGallery);           // Option 6: Hall of Fame Gallery Wipe
+router.delete('/purge-all', purgeSystemAll);           // 1. Global System Reset
+router.delete('/purge-attendance', wipeAttendance);    // 2. Attendance Wipe
+router.delete('/purge-messages', deleteAllMessages);   // 3. Noticeboard Wipe
+router.delete('/purge-exams', wipeExams);              // 4. Academic Exams Wipe
+router.delete('/purge-fees', wipeFees);                // 5. Financial Fee Ledger Wipe
+router.delete('/purge-gallery', wipeGallery);          // 6. Hall of Fame Gallery Wipe
 
 module.exports = router;
