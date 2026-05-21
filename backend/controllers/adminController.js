@@ -1,27 +1,19 @@
+// backend/controllers/adminController.js
 const User = require('../models/User');
 const Message = require('../models/Message');
+const Attendance = require('../models/Attendance');
+const ClassLog = require('../models/ClassLog');
+const Exam = require('../models/Exam'); 
+const Fee = require('../models/Fee'); 
+const Achievement = require('../models/Achievement');
 const bcrypt = require('bcryptjs');
 
 // 1. Get Platform-Wide Stats
-// const getAdminStats = async (req, res) => {
-//     try {
-//         const totalStudents = await User.countDocuments({ role: 'student' });
-//         const totalTeachers = await User.countDocuments({ role: 'teacher' });
-        
-//         // Count schedules for today
-//         const startOfDay = new Date().setHours(0, 0, 0, 0);
-//         const endOfDay = new Date().setHours(23, 59, 59, 999);
-//         // const classesToday = await Schedule.countDocuments({ date: { $gte: startOfDay, $lte: endOfDay } });
-
-//         res.json({ totalStudents, totalTeachers, classesToday });
-//     } catch (error) { res.status(500).json({ message: 'Server Error' }); }
-// };
 const getAdminStats = async (req, res) => {
     try {
         const totalStudents = await User.countDocuments({ role: 'student' });
         const totalTeachers = await User.countDocuments({ role: 'teacher' });
         
-        // Return 0 or remove this line entirely if your frontend doesn't need it
         const classesToday = 0; 
         
         res.json({ 
@@ -30,12 +22,12 @@ const getAdminStats = async (req, res) => {
             classesToday 
         });
     } catch (error) {
-        console.error("Admin Stats Error:", error); // This helps you see the REAL error in Render logs
+        console.error("Admin Stats Error:", error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
 
-// 2. Manage Teachers (Fetch, Add, Block, Delete)
+// 2. Manage Teachers (Fetch, Add, Block, Delete, Update)
 const getTeachers = async (req, res) => {
     try {
         const teachers = await User.find({ role: 'teacher' }).select('-password');
@@ -75,7 +67,7 @@ const deleteUser = async (req, res) => {
         res.json({ message: 'User deleted successfully' });
     } catch (error) { res.status(500).json({ message: 'Server Error' }); }
 };
-// Add this to update a teacher's details
+
 const updateTeacher = async (req, res) => {
     try {
         const { name, email, phone } = req.body;
@@ -90,7 +82,7 @@ const updateTeacher = async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Server Error' }); }
 };
 
-// Add these for the Admin Noticeboard & Broadcast system
+// 3. Admin Noticeboard & Broadcast System
 const getMessages = async (req, res) => {
     try {
         const messages = await Message.find().populate('sender', 'name role').sort({ createdAt: -1 });
@@ -105,15 +97,78 @@ const sendMessage = async (req, res) => {
         res.status(201).json(message);
     } catch (error) { res.status(500).json({ message: 'Server Error' }); }
 };
-// Add this below your sendMessage function
+
+// =========================================================================
+// SYSTEM PURGE SUB-ENGINE OPERATIONS (THE 6 SECTOR WIPES)
+// =========================================================================
+
+// OPTION 1: GLOBAL SYSTEM RESET (MODIFIED: GALLERY / ACHIEVEMENT DATA EXCLUDED)
+const purgeSystemAll = async (req, res) => {
+    try {
+        await Promise.all([
+            User.deleteMany({ role: 'student' }), // Drops student accounts cleanly
+            Attendance.deleteMany({}),           // Drops global attendance logs
+            Message.deleteMany({}),              // Drops noticeboard feeds
+            Exam.deleteMany({}),                 // Drops all academic exams records
+            ClassLog.deleteMany({})              // Drops teacher daily class work updates
+            // Achievement.deleteMany({}) <--- EXCLUDED: Gallery is safely kept!
+        ]);
+        res.json({ message: 'Global system reset complete. Faculty accounts and Achievement Gallery items preserved successfully.' });
+    } catch (err) {
+        console.error("Global Purge Error:", err);
+        res.status(500).json({ message: 'Server Error during global cleanup reset' });
+    }
+};
+
+// OPTION 3: INDEPENDENT NOTICEBOARD FEED CLEAR
 const deleteAllMessages = async (req, res) => {
     try {
-        await Message.deleteMany({}); // Wipes the entire collection
+        await Message.deleteMany({}); 
         res.json({ message: 'All platform messages have been permanently deleted.' });
     } catch (error) { 
         res.status(500).json({ message: 'Server Error' }); 
     }
 };
+
+// OPTION 4: INDEPENDENT ACADEMIC EXAMS CLEANUP
+const wipeExams = async (req, res) => {
+    try {
+        await Exam.deleteMany({});
+        res.json({ message: 'All student examination records and marks report sets deleted.' });
+    } catch (error) {
+        console.error("Wipe Exams Error:", error);
+        res.status(500).json({ message: 'Server Error wiping examinations data' });
+    }
+};
+
+// OPTION 5: INDEPENDENT FINANCIAL SNAPSHOT FLUSH
+const wipeFees = async (req, res) => {
+    try {
+        await Fee.deleteMany({});
+        res.json({ message: 'All transaction ledger collections and generated receipts flushed cleanly.' });
+    } catch (error) {
+        console.error("Wipe Fees Error:", error);
+        res.status(500).json({ message: 'Server Error flushing financial files database logs' });
+    }
+};
+
+// OPTION 6: INDEPENDENT GALLERY MASTER RESET
+const wipeGallery = async (req, res) => {
+    try {
+        await Achievement.deleteMany({});
+        res.json({ message: 'Hall of Fame student gallery has been reset.' });
+    } catch (error) {
+        console.error("Wipe Gallery Error:", error);
+        res.status(500).json({ message: 'Server Error resetting achievement data records' });
+    }
+};
+
 module.exports = {
-    getAdminStats, getTeachers, addTeacher, toggleBlockUser, deleteUser,updateTeacher, getMessages, sendMessage, deleteAllMessages
+    getAdminStats, getTeachers, addTeacher, toggleBlockUser, deleteUser, updateTeacher, 
+    getMessages, sendMessage, 
+    purgeSystemAll,    // Option 1
+    deleteAllMessages, // Option 3
+    wipeExams,         // Option 4
+    wipeFees,          // Option 5
+    wipeGallery        // Option 6
 };
