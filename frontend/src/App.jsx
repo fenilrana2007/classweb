@@ -10,8 +10,8 @@ import TeacherPortal from './pages/TeacherPortal';
 import AdminPortal from './pages/AdminPortal';
 // Add this route inside your <Routes> block:
 // Temporary Home Page (We will build this later)
-const Home = () => <div className="p-10 text-2xl font-bold text-center mt-20">Marketing Home Page</div>;
-
+  // const Home = () => <div className="p-10 text-2xl font-bold text-center mt-20">Marketing Home Page</div>;
+import Home from './pages/Home';
 function App() {
   return (
     <AuthProvider>

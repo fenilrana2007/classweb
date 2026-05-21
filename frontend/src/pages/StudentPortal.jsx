@@ -176,7 +176,7 @@ const AttendanceTab = ({ attendance, percentage }) => (
     <div className="col-span-1 md:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
       <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2"><CheckCircle className="text-blue-600" /> My Attendance History</h2>
       <div className="overflow-x-auto border border-gray-100 rounded-xl">
-        <table className="w-full text-left border-collapse min-w-[300px]">
+        <table className="w-full text-left border-collapse  `min-w-75`">
           <thead><tr className="bg-gray-50 border-b border-gray-100"><th className="p-3 md:p-4 text-xs md:text-sm text-gray-500">Date</th><th className="p-3 md:p-4 text-xs md:text-sm text-gray-500">Status</th></tr></thead>
           <tbody>
             {attendance.length === 0 ? <tr><td colSpan="2" className="p-6 md:p-8 text-center text-sm text-gray-500">No records found.</td></tr> : 
@@ -415,7 +415,7 @@ const MyFeesTab = () => {
       {/* Receipt History Table */}
       <h3 className="font-bold text-gray-900 mb-4 text-lg">Payment Receipts</h3>
       <div className="overflow-x-auto border border-gray-200 rounded-xl shadow-sm">
-        <table className="w-full text-left border-collapse min-w-[600px]">
+        <table className="w-full text-left border-collapse `min-w-150`">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="p-4 text-sm text-gray-600">Date & Time</th>

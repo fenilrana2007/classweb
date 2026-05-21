@@ -1,5 +1,4 @@
-// src/pages/Login.jsx
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react'; // 1. Imported useEffect
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
@@ -10,8 +9,22 @@ const Login = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login } = useContext(AuthContext);
+  // 2. Grab 'user' from AuthContext to check if they are already logged in
+  const { login, user } = useContext(AuthContext); 
   const navigate = useNavigate();
+
+  // 3. THE TRAFFIC COP: Instantly redirects users who are already logged in
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else if (user.role === 'teacher') {
+        navigate('/teacher');
+      } else {
+        navigate('/student'); // Make sure this matches your App.jsx route (e.g., /student or /dashboard)
+      }
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,16 +34,15 @@ const Login = () => {
     const result = await login(email, password);
     
     if (result.success) {
-      // Grab the user data that AuthContext just saved
       const loggedInUser = JSON.parse(localStorage.getItem('user'));
       
-      // SMART ROUTING: Send them to their specific URL
+      // SMART ROUTING: Send them to their specific URL after clicking Sign In
       if (loggedInUser.role === 'admin') {
         navigate('/admin');
       } else if (loggedInUser.role === 'teacher') {
         navigate('/teacher');
       } else {
-        navigate('/dashboard'); // Default for students
+        navigate('/student'); // Make sure this matches your App.jsx route
       }
     } else {
       setError(result.message);
@@ -104,13 +116,6 @@ const Login = () => {
             </button>
           </div>
         </form>
-
-        {/* <div className="text-center text-sm">
-          <span className="text-gray-600">Don't have an account? </span>
-          <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
-            Register here
-          </Link>
-        </div> */}
       </div>
     </div>
   );
