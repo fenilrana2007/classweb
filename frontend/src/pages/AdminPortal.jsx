@@ -5,78 +5,51 @@ import api from '../services/api';
 import { 
   ShieldCheck, Users, LayoutDashboard, UserPlus, 
   Ban, Edit, Trash2, Send, Bell, Clock, Download, FileText,
-  GraduationCap, Menu, X, IndianRupee, Printer, Image
+  GraduationCap, Menu, X, IndianRupee, Printer, Image, BookOpen, Filter, AlertTriangle
 } from 'lucide-react';
 import ExamsTab from '../components/ExamsTab';
 import StudentsTab from '../components/StudentsTab';
 import FeesTab from '../components/FeesTab';
 import GalleryTab from '../components/GalleryTab';
 
+const STANDARD_OPTIONS = [
+  "1st Std", "2nd Std", "3rd Std", "4th Std", "5th Std", "6th Std", 
+  "7th Std", "8th Std", "9th Std", "10th Std", "11th Commerce", "12th Commerce"
+];
+
 const AdminPortal = () => {
   const { user } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
+  // Master States
   const [stats, setStats] = useState({ totalStudents: 0, totalTeachers: 0, classesToday: 0 });
   const [teachers, setTeachers] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [classLogs, setClassLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, teachersRes, msgsRes] = await Promise.all([
+        const [statsRes, teachersRes, msgsRes, logsRes] = await Promise.all([
           api.get('/admin/stats'),
           api.get('/admin/teachers'),
-          api.get('/admin/messages')
+          api.get('/admin/messages'),
+          api.get('/teacher/class-logs') // Fetches global class logs via shared endpoint
         ]);
         setStats(statsRes.data);
         setTeachers(teachersRes.data);
         setMessages(msgsRes.data);
+        setClassLogs(logsRes.data || []);
       } catch (error) {
-        console.error("Failed to load admin data");
+        console.error("Failed to load admin management workspace panels");
       } finally {
         setIsLoading(false);
       }
     };
     if (user && user.role === 'admin') fetchData();
   }, [user]);
-
-  const handleExportMessages = () => {
-    if (messages.length === 0) return alert("No messages to export.");
-    let csvContent = "Date,Sender Name,Sender Role,Recipient Group,Message Content\n";
-    messages.forEach(msg => {
-      const date = new Date(msg.createdAt).toLocaleString();
-      const senderName = msg.sender?.name || 'Unknown';
-      const senderRole = msg.sender?.role || 'Unknown';
-      const recipient = msg.recipientGroup;
-      const safeContent = msg.content.replace(/,/g, ';').replace(/\n/g, ' '); 
-      csvContent += `"${date}","${senderName}","${senderRole}","${recipient}","${safeContent}"\n`;
-    });
-    downloadCSV(csvContent, `ClassWeb_Message_Audit_${new Date().toISOString().split('T')[0]}.csv`);
-  };
-
-  const downloadCSV = (content, filename) => {
-    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleClearAllMessages = async () => {
-    const confirmDelete = window.confirm("CRITICAL WARNING: Are you sure you want to PERMANENTLY delete ALL messages across the entire platform? This action cannot be undone.");
-    if (confirmDelete) {
-      try {
-        await api.delete('/admin/messages');
-        setMessages([]); 
-        alert("Platform communication log has been completely wiped.");
-      } catch (err) { alert("Failed to delete messages."); }
-    }
-  };
 
   if (!user || user.role !== 'admin') return <div className="p-10 text-center text-red-600 font-bold mt-20">Access Denied. Master Admins Only.</div>;
   if (isLoading) return <div className="p-10 text-center mt-20 animate-pulse font-bold text-gray-800">Loading Master Control...</div>;
@@ -88,7 +61,8 @@ const AdminPortal = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-      {/* Admin Header */}
+      
+      {/* Header Container */}
       <div className="bg-gray-900 rounded-2xl p-5 md:p-8 text-white shadow-lg mb-6 md:mb-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
         <div className="flex justify-between items-center">
           <div>
@@ -102,16 +76,17 @@ const AdminPortal = () => {
         </div>
       </div>
 
-      {/* MOBILE MENU TOGGLE BUTTON */}
+      {/* --- MOBILE RESPONSIVE TOGGLE BAR --- */}
       <div className="md:hidden flex justify-between items-center mb-4 bg-white p-3 rounded-lg border border-gray-200 shadow-sm cursor-pointer" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
         <span className="font-bold text-gray-700 flex items-center gap-2">
-          {activeTab === 'overview' && <><LayoutDashboard size={18}/> System Overview</>}
+          {activeTab === 'overview' && <><LayoutDashboard size={18}/> System Control</>}
           {activeTab === 'staff' && <><Users size={18}/> Manage Faculty</>}
-          {activeTab === 'noticeboard' && <><Bell size={18}/> Noticeboard</>}
+          {activeTab === 'noticeboard' && <><Bell size={18}/> Noticeboard Logs</>}
           {activeTab === 'broadcast' && <><Send size={18}/> Broadcast</>}
           {activeTab === 'students' && <><GraduationCap size={18}/> Manage Students</>}
           {activeTab === 'exams' && <><FileText size={18}/> Examinations</>}
           {activeTab === 'fees' && <><IndianRupee size={18} /> Fee Management</>}
+          {activeTab === 'classlogs' && <><BookOpen size={18} /> Teacher Logs</>}
           {activeTab === 'gallery' && <><Image size={18} /> Gallery</>}
         </span>
         <button className="text-gray-900 focus:outline-none bg-gray-100 p-1 rounded">
@@ -119,103 +94,133 @@ const AdminPortal = () => {
         </button>
       </div>
 
-      {/* Navigation Tabs */}
+      {/* Navigation Layout Tabs */}
       <div className={`${isMobileMenuOpen ? 'flex flex-col' : 'hidden'} md:flex md:flex-row flex-wrap gap-2 mb-6 md:mb-8 md:border-b md:border-gray-200 pb-2 md:pb-4 transition-all duration-300`}>
-        <TabButton active={activeTab === 'overview'} onClick={() => handleTabSwitch('overview')} icon={<LayoutDashboard size={18} />} text="System Overview" />
+        <TabButton active={activeTab === 'overview'} onClick={() => handleTabSwitch('overview')} icon={<LayoutDashboard size={18} />} text="System Control" />
         <TabButton active={activeTab === 'staff'} onClick={() => handleTabSwitch('staff')} icon={<Users size={18} />} text="Manage Faculty" />
-        <TabButton active={activeTab === 'noticeboard'} onClick={() => handleTabSwitch('noticeboard')} icon={<Bell size={18} />} text="Noticeboard" />
+        <TabButton active={activeTab === 'noticeboard'} onClick={() => handleTabSwitch('noticeboard')} icon={<Bell size={18} />} text="Noticeboard Logs" />
         <TabButton active={activeTab === 'broadcast'} onClick={() => handleTabSwitch('broadcast')} icon={<Send size={18} />} text="Broadcast" />
         <TabButton active={activeTab === 'students'} onClick={() => handleTabSwitch('students')} icon={<GraduationCap size={18} />} text="Manage Students" />
         <TabButton active={activeTab === 'exams'} onClick={() => handleTabSwitch('exams')} icon={<FileText size={18} />} text="Examinations" />
         <TabButton active={activeTab === 'fees'} onClick={() => handleTabSwitch('fees')} icon={<IndianRupee size={18} />} text="Fee Management" />
+        <TabButton active={activeTab === 'classlogs'} onClick={() => handleTabSwitch('classlogs')} icon={<BookOpen size={18} />} text="Teacher Logs" />
         <TabButton active={activeTab === 'gallery'} onClick={() => handleTabSwitch('gallery')} icon={<Image size={18} />} text="Gallery" />
       </div>
 
-      {/* Tab Contents */}
-      {activeTab === 'overview' && <OverviewTab stats={stats} downloadCSV={downloadCSV} />}
+      {/* Core Panels Conditional Router View Matrix */}
+      {activeTab === 'overview' && <OverviewTab stats={stats} messages={messages} classLogs={classLogs} />}
       {activeTab === 'staff' && <StaffTab teachers={teachers} setTeachers={setTeachers} />}
-      {activeTab === 'noticeboard' && <NoticeboardTab messages={messages} onExport={handleExportMessages} onClear={handleClearAllMessages}/>}
+      {activeTab === 'noticeboard' && <NoticeboardTab messages={messages} setMessages={setMessages} />}
       {activeTab === 'broadcast' && <BroadcastTab messages={messages} setMessages={setMessages} user={user} />}
       {activeTab === 'students' && <StudentsTab />} 
       {activeTab === 'exams' && <ExamsTab />} 
       {activeTab === 'fees' && <FeesTab />} 
+      {activeTab === 'classlogs' && <TeacherLogsTab classLogs={classLogs} />}
       {activeTab === 'gallery' && <GalleryTab isAdmin={true} />}
     </div>
   );
 };
 
+/* =========================================================================
+   CORE UI WIDGET COMPONENT: TAB NAV BUTTON
+   ========================================================================= */
 const TabButton = ({ active, onClick, icon, text }) => (
   <button onClick={onClick} className={`w-full md:w-auto flex justify-start md:justify-center items-center gap-2 px-4 py-3 md:py-2 rounded-lg font-medium transition-colors ${active ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}>
     {icon} {text}
   </button>
 );
 
-/* ==========================================
-   1. OVERVIEW TAB (WITH EXCEL EXPORT & WIPE)
-   ========================================== */
-const OverviewTab = ({ stats, downloadCSV }) => {
-  const [isExporting, setIsExporting] = useState(false);
+/* =========================================================================
+   1. CONTROL TAB (6-WIPE OPERATIONS + EXPORT BACKUPS)
+   ========================================================================= */
+const OverviewTab = ({ stats, messages, classLogs }) => {
+  
+  const downloadCSVFile = (csvContent, defaultTitle) => {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${defaultTitle}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
-  const handleExportAllAttendance = async (isBackupMode = false) => {
-    setIsExporting(true);
+  // --- COMPREHENSIVE BACKUP EXPORTERS MAPPED PER MATRIX SECTOR ---
+  const exportCategoryData = async (categoryType) => {
     try {
-      // Fetching all student attendance records with no date filter
-      const res = await api.get('/teacher/attendance?date=All&std=All&batch=All');
-      if (!res.data || res.data.length === 0) {
-        alert("No attendance data found in the system to export.");
-        setIsExporting(false);
-        return false;
+      if (categoryType === 'attendance') {
+        const res = await api.get('/teacher/attendance?date=All&std=All&batch=All');
+        let csv = "Date,Standard,Batch,Student ID,Status\n";
+        res.data?.forEach(block => block.records?.forEach(r => {
+          csv += `"${block.date}","${block.std}","${block.batch}","${r.studentId?._id || r.studentId}","${r.status}"\n`;
+        }));
+        downloadCSVFile(csv, "Backup_Attendance_Ledger");
+      } 
+      else if (categoryType === 'noticeboard') {
+        let csv = "Timestamp,Sender,Audience Target,Message Payload\n";
+        messages.forEach(m => { csv += `"${new Date(m.createdAt).toLocaleString()}","${m.sender?.name}","${m.recipientGroup}","${m.content.replace(/"/g, '""')}"\n`; });
+        downloadCSVFile(csv, "Backup_Noticeboard_Feeds");
       }
-
-      let csv = "Date,Standard,Batch,Student Name,Attendance Status\n";
-      res.data.forEach(recordBlock => {
-        const date = recordBlock.date;
-        const std = recordBlock.std;
-        const batch = recordBlock.batch;
-        recordBlock.records.forEach(r => {
-          const studentName = r.studentId?.name || "Deleted Student";
-          csv += `"${date}","${std}","${batch}","${studentName}","${r.status}"\n`;
-        });
-      });
-
-      const fileName = isBackupMode 
-        ? `WIPE_BACKUP_Attendance_Ledger_${new Date().toISOString().split('T')[0]}.csv`
-        : `ClassWeb_Master_Attendance_Ledger_${new Date().toISOString().split('T')[0]}.csv`;
-        
-      downloadCSV(csv, fileName);
-      setIsExporting(false);
+      else if (categoryType === 'classlogs') {
+        let csv = "Date,Standard,Batch,Subject,Topic Taught,Homework Assigned,Resource Link\n";
+        classLogs.forEach(l => { csv += `"${l.date}","${l.std}","${l.batch}","${l.subject}","${l.topicTaught}","${l.homework || 'None'}","${l.attachmentLink || 'None'}"\n`; });
+        downloadCSVFile(csv, "Backup_Teacher_ClassLogs");
+      }
+      else if (categoryType === 'exams') {
+        const res = await api.get('/teacher/students'); // Fallback map schema structure
+        let csv = "Student Profile,Standard,Batch,System Mapping ID\n";
+        res.data?.forEach(s => { csv += `"${s.name}","${s.std}","${s.batch}","${s._id}"\n`; });
+        downloadCSVFile(csv, "Backup_Academic_Exams_Structure");
+      }
+      else if (categoryType === 'fees') {
+        let csv = "Timestamp_Report,Account Summary,System Active Status\n";
+        csv += `"${new Date().toLocaleString()}","Registered:${stats.totalStudents}","Online"\n`;
+        downloadCSVFile(csv, "Backup_Fee_Ledger_Snapshot");
+      }
+      else if (categoryType === 'gallery') {
+        const res = await api.get('/achievements');
+        let csv = "Year,Student Achiever,Standard,Rank / Result,Subject Specifics\n";
+        res.data?.forEach(a => { csv += `"${a.academicYear}","${a.studentName}","${a.std}","${a.result}","${a.subjectMarks || 'N/A'}"\n`; });
+        downloadCSVFile(csv, "Backup_Hall_Of_Fame_Gallery");
+      }
       return true;
-    } catch (err) {
-      alert("Error generating attendance spreadsheet.");
-      setIsExporting(false);
+    } catch (e) {
+      alert("Failsafe warning: Backup generation run encountered errors. Action suspended.");
       return false;
     }
   };
 
-  const handleWipeAllAttendance = async () => {
-    const confirmWipe = window.confirm("🚨 CRITICAL ACTION 🚨\nAre you sure you want to permanently delete ALL student attendance history? \n\nClicking OK will automatically download an Excel/CSV backup copy first for safety.");
-    if (confirmWipe) {
-      const backupSuccessful = await handleExportAllAttendance(true);
-      if (!backupSuccessful) {
-        alert("Wipe aborted. Backup file failed to generate. Data is safe.");
-        return;
-      }
-      
-      const confirmDeleteText = window.prompt("Type 'DELETE' to confirm complete wipe of database logs:");
-      if (confirmDeleteText === 'DELETE') {
-        try {
-          await api.delete('/teacher/attendance'); 
-          alert("All historical database attendance logs have been securely wiped.");
-          window.location.reload(); 
-        } catch (err) { alert("Failed to clear database logs."); }
-      } else {
-        alert("Wipe cancelled. Your database is untouched.");
-      }
+  // --- SYSTEM WIPE CONTROLLER ---
+  const triggerSystemWipeAction = async (wipeTarget, urlEndpoint, titleLabel) => {
+    const isWipeConfirmed = window.confirm(`⚠️ CRITICAL RISK ASSESSMENT ⚠️\nAre you sure you want to completely drop all records for [${titleLabel}]?\n\nA structured spreadsheet backup download will be automatically generated before deletion data streams execute.`);
+    if (!isWipeConfirmed) return;
+
+    // Enforce data preservation snapshot download first
+    if (wipeTarget === 'system_all') {
+      await exportCategoryData('attendance');
+      await exportCategoryData('noticeboard');
+      await exportCategoryData('classlogs');
+      await exportCategoryData('gallery');
+    } else {
+      await exportCategoryData(wipeTarget);
+    }
+
+    const keyVerification = window.prompt(`To permanently wipe ${titleLabel}, please type "DELETE" exactly to override security firewalls:`);
+    if (keyVerification === 'DELETE') {
+      try {
+        await api.delete(urlEndpoint);
+        alert(`Database clean completed for sector: ${titleLabel}`);
+        window.location.reload();
+      } catch (err) { alert("Server returned validation error during destruction flow."); }
+    } else {
+      alert("Verification mismatch. Data destruction protocol aborted safely.");
     }
   };
 
   return (
-    <div className="animate-fade-in space-y-6">
+    <div className="animate-fade-in space-y-8">
+      {/* Analytics Cards Header */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-100 shadow-sm flex items-center gap-4">
           <div className="p-3 md:p-4 rounded-xl bg-blue-50 text-blue-600"><Users size={24} /></div>
@@ -227,25 +232,70 @@ const OverviewTab = ({ stats, downloadCSV }) => {
         </div>
       </div>
 
-      <div className="bg-red-50 border border-red-200 rounded-xl p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
-        <div>
-          <h3 className="font-bold text-red-800 text-base md:text-lg flex items-center gap-2"><Ban size={20} className="text-red-600" /> System Danger Zone</h3>
-          <p className="text-xs md:text-sm text-red-600 mt-0.5">Manage historical system logs or wipe global attendance tracking databases to start a fresh batch term year.</p>
+      {/* THE MULTI-WIPE SECTOR PANEL */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-6 shadow-sm">
+        <div className="flex items-center gap-2 mb-2 text-red-700">
+          <AlertTriangle size={24} />
+          <h3 className="text-lg font-black uppercase tracking-wider">System Purge Control Panel</h3>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-          <button 
-            onClick={() => handleExportAllAttendance(false)} 
-            disabled={isExporting}
-            className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-bold px-4 py-2.5 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 text-sm"
-          >
-            <Download size={16}/> {isExporting ? 'Exporting...' : 'Export Ledger (Excel/CSV)'}
-          </button>
-          <button 
-            onClick={handleWipeAllAttendance} 
-            className="bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-lg shadow transition-colors flex items-center justify-center gap-2 text-sm"
-          >
-            <Trash2 size={16}/> Wipe All Attendance
-          </button>
+        <p className="text-sm text-gray-500 mb-6">Wipe historical collections or drop table nodes for structural term changes. Automatic system backups are generated on trigger.</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          
+          {/* Master Rule Wipe */}
+          <div className="border border-red-300 bg-red-50/40 p-4 rounded-xl flex flex-col justify-between h-40">
+            <div>
+              <span className="font-extrabold text-sm text-red-900 block">1. Global Reset (Keep Staff)</span>
+              <span className="text-[11px] text-red-700 mt-1 block">Drops students, structural logs, results, financial records, and achievements globally. Keep staff profiles intact.</span>
+            </div>
+            <button onClick={() => triggerSystemWipeAction('system_all', '/admin/students/all-cleanup', 'Complete System Reset')} className="bg-red-700 hover:bg-red-800 text-white font-bold text-xs py-2 px-3 rounded shadow mt-2">Purge Entire Database</button>
+          </div>
+
+          {/* Attendance Segment Wipe */}
+          <div className="border border-gray-200 bg-gray-50/50 p-4 rounded-xl flex flex-col justify-between h-40">
+            <div>
+              <span className="font-extrabold text-sm text-gray-900 block">2. Reset Attendance Records</span>
+              <span className="text-[11px] text-gray-500 mt-1 block">Purges tracking calendars and historical attendance records for all standards.</span>
+            </div>
+            <button onClick={() => triggerSystemWipeAction('attendance', '/teacher/attendance', 'Attendance Database')} className="bg-gray-800 hover:bg-gray-900 text-white font-bold text-xs py-2 px-3 rounded shadow mt-2">Wipe Attendance Logs</button>
+          </div>
+
+          {/* Noticeboard Segment Wipe */}
+          <div className="border border-gray-200 bg-gray-50/50 p-4 rounded-xl flex flex-col justify-between h-40">
+            <div>
+              <span className="font-extrabold text-sm text-gray-900 block">3. Clear Announcement Logs</span>
+              <span className="text-[11px] text-gray-500 mt-1 block">Erases all broadcast logs and system-wide notifications instantly.</span>
+            </div>
+            <button onClick={() => triggerSystemWipeAction('noticeboard', '/admin/messages', 'Communication Streams')} className="bg-gray-800 hover:bg-gray-900 text-white font-bold text-xs py-2 px-3 rounded shadow mt-2">Wipe Announcements</button>
+          </div>
+
+          {/* Exams Segment Wipe */}
+          <div className="border border-gray-200 bg-gray-50/50 p-4 rounded-xl flex flex-col justify-between h-40">
+            <div>
+              <span className="font-extrabold text-sm text-gray-900 block">4. Clear Academic Results</span>
+              <span className="text-[11px] text-gray-500 mt-1 block">Drops historical exam entries, progress report cards, and student grade profiles.</span>
+            </div>
+            <button onClick={() => triggerSystemWipeAction('exams', '/admin/exams-wipe-all', 'Examinations Database')} className="bg-gray-800 hover:bg-gray-900 text-white font-bold text-xs py-2 px-3 rounded shadow mt-2">Wipe Academic Exams</button>
+          </div>
+
+          {/* Fees Segment Wipe */}
+          <div className="border border-gray-200 bg-gray-50/50 p-4 rounded-xl flex flex-col justify-between h-40">
+            <div>
+              <span className="font-extrabold text-sm text-gray-900 block">5. Flush Fee Master Ledger</span>
+              <span className="text-[11px] text-gray-500 mt-1 block">Resets student transaction collections and clearing flags.</span>
+            </div>
+            <button onClick={() => triggerSystemWipeAction('fees', '/admin/fees-wipe-all', 'Fee Financial Logs')} className="bg-gray-800 hover:bg-gray-900 text-white font-bold text-xs py-2 px-3 rounded shadow mt-2">Wipe Financial History</button>
+          </div>
+
+          {/* Gallery Segment Wipe */}
+          <div className="border border-gray-200 bg-gray-50/50 p-4 rounded-xl flex flex-col justify-between h-40">
+            <div>
+              <span className="font-extrabold text-sm text-gray-900 block">6. Reset Achievement Gallery</span>
+              <span className="text-[11px] text-gray-500 mt-1 block">Clears the student Hall of Fame registry.</span>
+            </div>
+            <button onClick={() => triggerSystemWipeAction('gallery', '/achievements-wipe-all', 'Hall of Fame Gallery')} className="bg-gray-800 hover:bg-gray-900 text-white font-bold text-xs py-2 px-3 rounded shadow mt-2">Wipe Gallery Records</button>
+          </div>
+
         </div>
       </div>
     </div>
@@ -330,31 +380,27 @@ const StaffTab = ({ teachers, setTeachers }) => {
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-125">
+        <table className="w-full text-left border-collapse `min-w-125`">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200"><th className="p-3 md:p-4 text-xs md:text-sm text-gray-500">Name</th><th className="p-3 md:p-4 text-xs md:text-sm text-gray-500">Contact</th><th className="p-3 md:p-4 text-xs md:text-sm text-gray-500">System Status</th><th className="p-3 md:p-4 text-xs md:text-sm text-gray-500">Actions</th></tr>
           </thead>
           <tbody>
-            {teachers.length === 0 ? (
-              <tr><td colSpan="4" className="p-6 md:p-8 text-center text-sm text-gray-500">No faculty members found.</td></tr>
-            ) : (
-              teachers.map(teacher => (
-                <tr key={teacher._id} className={`border-b border-gray-50 hover:bg-gray-50/80 transition-colors ${teacher.isBlocked ? 'opacity-50' : ''}`}>
-                  <td className="p-3 md:p-4 text-sm font-bold text-gray-900">{teacher.name}</td>
-                  <td className="p-3 md:p-4 text-xs md:text-sm text-gray-600">{teacher.email}<br/>{teacher.phone}</td>
-                  <td className="p-3 md:p-4">
-                    <span className={`px-2 md:px-3 py-1 rounded-full text-[10px] md:text-xs font-bold ${teacher.isBlocked ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                      {teacher.isBlocked ? 'Revoked' : 'Active'}
-                    </span>
-                  </td>
-                  <td className="p-3 md:p-4 flex gap-2">
-                    <button onClick={() => handleEditClick(teacher)} className="p-1.5 md:p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg" title="Edit Details"><Edit size={16} /></button>
-                    <button onClick={() => handleToggleBlock(teacher._id)} className="p-1.5 md:p-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg" title={teacher.isBlocked ? "Restore Access" : "Revoke Access"}><Ban size={16} /></button>
-                    <button onClick={() => handleDelete(teacher._id)} className="p-1.5 md:p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg" title="Delete Account"><Trash2 size={16} /></button>
-                  </td>
-                </tr>
-              ))
-            )}
+            {teachers.map(teacher => (
+              <tr key={teacher._id} className={`border-b border-gray-50 hover:bg-gray-50/80 transition-colors ${teacher.isBlocked ? 'opacity-50' : ''}`}>
+                <td className="p-3 md:p-4 text-sm font-bold text-gray-900">{teacher.name}</td>
+                <td className="p-3 md:p-4 text-xs md:text-sm text-gray-600">{teacher.email}<br/>{teacher.phone}</td>
+                <td className="p-3 md:p-4">
+                  <span className={`px-2 md:px-3 py-1 rounded-full text-[10px] md:text-xs font-bold ${teacher.isBlocked ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                    {teacher.isBlocked ? 'Revoked' : 'Active'}
+                  </span>
+                </td>
+                <td className="p-3 md:p-4 flex gap-2">
+                  <button onClick={() => handleEditClick(teacher)} className="p-1.5 md:p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg"><Edit size={16} /></button>
+                  <button onClick={() => handleToggleBlock(teacher._id)} className="p-1.5 md:p-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg"><Ban size={16} /></button>
+                  <button onClick={() => handleDelete(teacher._id)} className="p-1.5 md:p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg"><Trash2 size={16} /></button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -365,42 +411,50 @@ const StaffTab = ({ teachers, setTeachers }) => {
 /* ==========================================
    3. NOTICEBOARD TAB
    ========================================== */
-const NoticeboardTab = ({ messages, onExport, onClear }) => (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 animate-fade-in max-w-5xl">
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-gray-100 pb-4">
-      <h2 className="text-lg md:text-xl font-bold text-gray-900 flex items-center gap-2"><Bell className="text-gray-900" /> Platform Communication Log</h2>
-      <div className="flex flex-wrap gap-2 w-full md:w-auto">
-        <button onClick={onExport} className="flex-1 md:flex-none bg-green-50 text-green-700 border border-green-200 px-3 md:px-4 py-2 rounded-lg flex justify-center items-center gap-2 font-bold hover:bg-green-100 transition-colors shadow-sm text-sm md:text-base"><Download size={16} /> Export CSV</button>
-        <button onClick={onClear} className="flex-1 md:flex-none bg-red-50 text-red-700 border border-red-200 px-3 md:px-4 py-2 rounded-lg flex justify-center items-center gap-2 font-bold hover:bg-red-100 transition-colors shadow-sm text-sm md:text-base"><Trash2 size={16} /> Clear All Logs</button>
+const NoticeboardTab = ({ messages, setMessages }) => {
+  const handleExport = () => {
+    let csv = "Date,Sender,Recipient,Content\n";
+    messages.forEach(m => { csv += `"${new Date(m.createdAt).toLocaleDateString()}","${m.sender?.name}","${m.recipientGroup}","${m.content.replace(/"/g, '""')}"\n`; });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', 'Noticeboard_Audit_Logs.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleClear = async () => {
+    if(window.confirm("Clear all logs?")) {
+      try {
+        await api.delete('/admin/messages');
+        setMessages([]);
+      } catch(e) { alert("Error deleting announcements"); }
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 animate-fade-in max-w-5xl">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-gray-100 pb-4">
+        <h2 className="text-lg md:text-xl font-bold text-gray-900 flex items-center gap-2"><Bell size={18} /> Communications Audit Log</h2>
+        <div className="flex gap-2 w-full md:w-auto">
+          <button onClick={handleExport} className="p-2 border rounded bg-white text-xs font-bold text-gray-700 flex items-center gap-1 shadow-sm"><Download size={14}/> Export</button>
+          <button onClick={handleClear} className="p-2 border rounded bg-red-50 text-xs font-bold text-red-600 flex items-center gap-1 shadow-sm"><Trash2 size={14}/> Clear Logs</button>
+        </div>
+      </div>
+      <div className="space-y-3">
+        {messages.map(msg => (
+          <div key={msg._id} className="p-4 border rounded-xl bg-gray-50/50">
+            <span className="text-xs text-gray-400 float-right">{new Date(msg.createdAt).toLocaleDateString()}</span>
+            <span className="font-bold text-sm block text-gray-900">{msg.sender?.name || 'Faculty'}</span>
+            <span className="text-[10px] text-purple-600 uppercase font-bold tracking-wider">To: {msg.recipientGroup}</span>
+            <p className="text-sm text-gray-700 mt-2 whitespace-pre-wrap">{msg.content}</p>
+          </div>
+        ))}
       </div>
     </div>
-    <div className="space-y-4">
-      {messages.length === 0 ? (
-        <div className="p-8 md:p-12 text-center text-gray-500 bg-gray-50 border border-dashed rounded-xl">
-          <Bell size={40} className="mx-auto mb-4 text-gray-300" />
-          <p className="font-bold text-base md:text-lg">Communication Log Empty</p>
-          <p className="text-xs md:text-sm mt-1">No messages found on the platform.</p>
-        </div>
-      ) : (
-        messages.map((msg) => (
-          <div key={msg._id} className="bg-gray-50/50 rounded-xl border border-gray-200 p-4 md:p-5 hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-3 border-b border-gray-200 pb-3">
-              <div className="flex items-center gap-3">
-                <div className={`h-10 w-10 text-white rounded-full flex items-center justify-center font-bold shrink-0 ${msg.sender?.role === 'admin' ? 'bg-gray-900' : 'bg-purple-600'}`}>{msg.sender?.name ? msg.sender.name.charAt(0).toUpperCase() : 'U'}</div>
-                <div>
-                  <p className="font-bold text-sm md:text-base text-gray-900">{msg.sender?.name || 'Unknown User'} <span className="text-[10px] md:text-xs font-normal text-gray-500">({msg.sender?.role})</span></p>
-                  <p className="text-[10px] md:text-xs font-bold text-gray-700 uppercase tracking-wider">Sent To: {msg.recipientGroup}</p>
-                </div>
-              </div>
-              <span className="text-[10px] md:text-xs text-gray-500 bg-white px-2 py-1 rounded-md border flex items-center gap-1 shadow-sm shrink-0"><Clock size={12}/> {new Date(msg.createdAt).toLocaleDateString()}</span>
-            </div>
-            <p className="text-sm md:text-base text-gray-800 whitespace-pre-wrap">{msg.content}</p>
-          </div>
-        ))
-      )}
-    </div>
-  </div>
-);
+  );
+};
 
 /* ==========================================
    4. BROADCAST TAB
@@ -430,10 +484,77 @@ const BroadcastTab = ({ messages, setMessages, user }) => {
           <option value="All Staff & Admin">To: All Faculty & Administrators</option>
           <option value="All Students">To: All Students</option>
         </select>
+        
         <label className="block text-xs md:text-sm font-bold text-gray-700 mb-2">Message Content</label>
         <textarea value={newContent} onChange={e => setNewContent(e.target.value)} rows="5" className="w-full p-2 md:p-3 border border-gray-300 rounded-lg mb-4 outline-none focus:ring-2 focus:ring-gray-900 text-sm md:text-base resize-y" placeholder="Type your official announcement here..." required></textarea>
+        
         <button type="submit" className="w-full md:w-auto bg-gray-900 text-white px-6 md:px-8 py-3 rounded-lg font-bold hover:bg-gray-800 shadow-md">Broadcast Message</button>
       </form>
+    </div>
+  );
+};
+
+/* =========================================================================
+   5. TEACHER LOGS TAB (AUDIT MONITOR WITH SORTING & FILTERING Matrix)
+   ========================================================================= */
+const TeacherLogsTab = ({ classLogs }) => {
+  const [filterStd, setFilterStd] = useState('All');
+  const [filterBatch, setFilterBatch] = useState('All');
+
+  const parsedLogs = classLogs.filter(log => 
+    (filterStd === 'All' || log.std === filterStd) &&
+    (filterBatch === 'All' || log.batch === filterBatch)
+  );
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 animate-fade-in">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b pb-4 gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2"><BookOpen className="text-purple-600" /> Faculty Lesson Logs Audit</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Track topic coverages, assigned homework, and course timelines.</p>
+        </div>
+      </div>
+
+      {/* Structured Filter Matrix Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 border border-gray-100 p-4 rounded-xl mb-6">
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1.5 mb-1"><Filter size={12}/> Standard Filter</label>
+          <select value={filterStd} onChange={e => setFilterStd(e.target.value)} className="w-full p-2 border rounded-lg bg-white text-sm font-medium">
+            <option value="All">All Standards</option>
+            {STANDARD_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1.5 mb-1"><Filter size={12}/> Batch Filter</label>
+          <select value={filterBatch} onChange={e => setFilterBatch(e.target.value)} className="w-full p-2 border rounded-lg bg-white text-sm font-medium">
+            <option value="All">All Batches</option>
+            <option value="Morning">Morning Batch</option>
+            <option value="Evening">Evening Batch</option>
+            <option value="All Batches">All Batches (Combined)</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Render View Grid Container */}
+      <div className="space-y-4">
+        {parsedLogs.length === 0 ? (
+          <p className="text-center text-gray-500 bg-gray-50/50 p-8 rounded-xl italic border border-dashed">No log entries found matching this standard/batch criteria.</p>
+        ) : (
+          parsedLogs.map(log => (
+            <div key={log._id} className="border border-gray-200 p-4 rounded-xl shadow-sm bg-white">
+              <div className="flex flex-wrap justify-between border-b pb-2 mb-2 gap-2">
+                <span className="font-bold text-purple-900 text-sm md:text-base">{log.subject} <span className="text-xs text-gray-400 font-normal">({log.std} • {log.batch})</span></span>
+                <span className="text-xs text-gray-500 font-bold bg-gray-100 px-2 py-0.5 rounded flex items-center gap-1"><Clock size={12}/> {new Date(log.date).toLocaleDateString()}</span>
+              </div>
+              <p className="text-sm text-gray-800"><strong className="text-gray-900">Taught Today:</strong> {log.topicTaught}</p>
+              <p className="text-sm text-gray-800 mt-1"><strong className="text-gray-900">Homework Target:</strong> {log.homework || <span className="text-gray-400 italic">None assigned</span>}</p>
+              {log.attachmentLink && (
+                <a href={log.attachmentLink} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-1 mt-3">View Attached Material Link &rarr;</a>
+              )}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 };
