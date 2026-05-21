@@ -5,7 +5,9 @@ const Attendance = require('../models/Attendance');
 const ClassLog = require('../models/ClassLog');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
-
+const Exam = require('../models/Exam'); 
+const Fee = require('../models/Fee'); // <--- Change to '../models/Fees' or '../models/Payment' if your filename is different!
+const Achievement = require('../models/Achievement');
 // Failsafe model loading system to avoid server startup path crashes if a model is missing
 const loadModelSafely = (name) => {
     try { 
@@ -173,7 +175,7 @@ const wipeExams = async (req, res) => {
 // OPTION 5: LEDGER BALANCE FINANCIAL WIPE
 const wipeFees = async (req, res) => {
     try {
-        const Fee = loadModelSafely('Fee') || loadModelSafely('Payment');
+        const Fee = await Fee.deleteMany({});
         if (Fee) {
             await Fee.deleteMany({});
             return res.json({ message: 'All student transaction structures purged successfully.' });
