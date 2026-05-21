@@ -42,7 +42,6 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
-const { createAchievement, getAchievements, updateAchievement, deleteAchievement } = require('./controllers/achievementController');
 // Load environment variables
 dotenv.config();
 
@@ -89,11 +88,7 @@ app.use('/api/fees', require('./routes/feeRoutes'));
 // Add these to an appropriate route file (e.g., backend/routes/adminRoutes.js or a dedicated achievementRoutes.js)
 
 // Add these to your router:
-router.get('/achievements', protect, getAchievements); // Everyone can view
-router.post('/achievements', protect, createAchievement); // Admin only (assuming your router is protected)
-router.put('/achievements/:id', protect, updateAchievement); 
-router.delete('/achievements/:id', protect, deleteAchievement);
-
+app.use('/api/achievements', require('./routes/achievementRoutes'));
 
 // --- SERVER START ---
 const PORT = process.env.PORT || 5000;
