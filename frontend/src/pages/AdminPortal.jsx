@@ -120,7 +120,7 @@ const AdminPortal = () => {
           {activeTab === 'students' && <><GraduationCap size={18}/> Manage Students</>}
           {activeTab === 'exams' && <><FileText size={18}/> Examinations</>}
           {activeTab === 'fees' && <><IndianRupee size={18} /> Fee Management</>}
-          {activeTab === 'gallery' && <GalleryTab isAdmin={true} />}
+          {activeTab === 'gallery' && <><Image size={18} /> Gallery</>}
         </span>
         <button className="text-gray-900 focus:outline-none bg-gray-100 p-1 rounded">
           {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -253,7 +253,7 @@ const StaffTab = ({ teachers, setTeachers }) => {
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[500px]">
+        <table className="w-full text-left border-collapse `min-w-125`">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200"><th className="p-3 md:p-4 text-xs md:text-sm text-gray-500">Name</th><th className="p-3 md:p-4 text-xs md:text-sm text-gray-500">Contact</th><th className="p-3 md:p-4 text-xs md:text-sm text-gray-500">System Status</th><th className="p-3 md:p-4 text-xs md:text-sm text-gray-500">Actions</th></tr>
           </thead>

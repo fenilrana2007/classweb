@@ -88,7 +88,7 @@ const TeacherPortal = () => {
           {activeTab === 'exams' && <><FileText size={18}/> Examinations</>}
           {activeTab === 'fees' && <><IndianRupee size={18} /> Fee Management</>}
           {activeTab === 'class-logs' && <><BookOpen size={18} /> Class Logs</>}
-          {activeTab === 'gallery' && <GalleryTab isAdmin={false} />}
+          {activeTab === 'gallery' && <><Image size={18} /> Gallery</>}
         </span>
         <button className="text-purple-600 focus:outline-none bg-purple-50 p-1 rounded">
           {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}

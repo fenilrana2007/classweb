@@ -83,9 +83,14 @@ const StudentPortal = () => {
         <span className="font-bold text-gray-700 flex items-center gap-2">
           {activeTab === 'noticeboard' && <><Bell size={18}/> Noticeboard</>}
           {activeTab === 'attendance' && <><CheckCircle size={18}/> My Attendance</>}
-          {activeTab === 'exams' && <><FileText size={18}/> My Results</>}
+          {/* {activeTab === 'exams' && <><FileText size={18}/> My Results</>}
           
-          {activeTab === 'gallery' && <GalleryTab isAdmin={false} />}
+          {activeTab === 'gallery' && <GalleryTab isAdmin={false} />}}   */}
+          // ✅ CORRECT CODE
+          {activeTab === 'exams' && <><FileText size={18}/> My Results</>}
+          {activeTab === 'fees' && <><IndianRupee size={18}/> My Fees</>}
+          {activeTab === 'classlogs' && <><BookOpen size={18}/> Class Work & Docs</>}
+          {activeTab === 'gallery' && <><Image size={18}/> Gallery</>}
         </span>
         <button className="text-blue-600 focus:outline-none bg-blue-50 p-1 rounded">
           {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}

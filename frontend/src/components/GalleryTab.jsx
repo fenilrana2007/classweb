@@ -225,7 +225,7 @@ const GalleryTab = ({ isAdmin }) => {
           {isUploading && <p className="text-center text-sm text-yellow-600 font-bold mb-4 flex justify-center items-center gap-2"><Loader size={16} className="animate-spin" /> Uploading to secure server...</p>}
 
           <div className="flex flex-col md:flex-row gap-3 pt-4 border-t border-gray-100">
-            <button type="submit" disabled={isUploading} className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:from-yellow-600 hover:to-yellow-700 transition-all disabled:opacity-50">
+            <button type="submit" disabled={isUploading} className="flex-1 `bg-gradient-to-r` from-yellow-500 to-yellow-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:from-yellow-600 hover:to-yellow-700 transition-all disabled:opacity-50">
               {editingId ? 'Update Achiever Record' : 'Publish to Hall of Fame'}
             </button>
             {editingId && <button type="button" onClick={resetForm} className="px-8 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200">Cancel</button>}
@@ -262,7 +262,7 @@ const GalleryTab = ({ isAdmin }) => {
             ) : (
               filteredGallery.map(ach => (
                 <div key={ach._id} className="relative bg-white rounded-2xl shadow-lg border border-gray-100 transition-all hover:-translate-y-1 hover:shadow-xl flex flex-col mt-8">
-                  <div className="h-20 bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 rounded-t-2xl relative">
+                  <div className="h-20 `bg-gradient-to-r` from-yellow-400 via-yellow-500 to-orange-500 rounded-t-2xl relative">
                      <div className="absolute top-3 right-3 bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-full border border-white/30">
                       {ach.academicYear}
                     </div>
@@ -278,7 +278,7 @@ const GalleryTab = ({ isAdmin }) => {
                     )}
                   </div>
 
-                  <div className="pt-16 pb-6 px-6 flex-grow flex flex-col text-center">
+                  <div className="pt-16 pb-6 px-6 `flex-grow` flex flex-col text-center">
                     <h3 className="text-xl font-extrabold text-gray-900 leading-tight">{ach.studentName}</h3>
                     <p className="text-sm font-medium text-gray-500 mt-1">{ach.std} <span className="mx-1">•</span> {ach.batch}</p>
                     
