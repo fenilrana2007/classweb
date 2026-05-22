@@ -225,7 +225,7 @@ const GalleryTab = ({ isAdmin }) => {
           {isUploading && <p className="text-center text-sm text-yellow-600 font-bold mb-4 flex justify-center items-center gap-2"><Loader size={16} className="animate-spin" /> Uploading to secure server...</p>}
 
           <div className="flex flex-col md:flex-row gap-3 pt-4 border-t border-gray-100">
-            <button type="submit" disabled={isUploading} className="flex-1 `bg-gradient-to-r` from-yellow-500 to-yellow-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:from-yellow-600 hover:to-yellow-700 transition-all disabled:opacity-50">
+            <button type="submit" disabled={isUploading} className="flex-1 `bg-gradient-to-r` from-yellow-500 to-yellow-600 text-black font-bold py-3.5 rounded-xl shadow-lg hover:from-yellow-600 hover:to-yellow-700 transition-all disabled:opacity-50">
               {editingId ? 'Update Achiever Record' : 'Publish to Hall of Fame'}
             </button>
             {editingId && <button type="button" onClick={resetForm} className="px-8 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200">Cancel</button>}
