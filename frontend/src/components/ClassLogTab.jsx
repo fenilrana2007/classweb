@@ -61,16 +61,6 @@ const ClassLogTab = () => {
     const data = new FormData();
     data.append("file", file);
 
-    // ⚠️ IMPORTANT: Replace these with your actual Cloudinary details!
-    // data.append("upload_preset", process.env.CLOUDINARY_UPLOAD_PRESET);
-    // data.append("cloud_name", process.env.CLOUDINARY_CLOUD_NAME);
-
-    // try {
-    //   // ⚠️ IMPORTANT: Replace 'YOUR_CLOUD_NAME' in this URL too!
-    //   const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/auto/upload`, {
-    //     method: "POST",
-    //     body: data
-    //   });
     const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 
@@ -157,16 +147,18 @@ const ClassLogTab = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 animate-fade-in">
+    // ✅ ADDED: w-full overflow-x-hidden for mobile responsiveness
+    <div className="w-full bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 animate-fade-in overflow-x-hidden">
       <h2 className="text-lg md:text-xl font-bold mb-6 flex items-center gap-2">
         <BookOpen className="text-purple-600" /> Daily Class Logs & Homework
       </h2>
 
       <form
         onSubmit={handleSubmit}
-        className="bg-purple-50 p-4 md:p-6 rounded-xl border border-purple-100 mb-8"
+        className="bg-purple-50 p-4 md:p-6 rounded-xl border border-purple-100 mb-8 w-full"
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        {/* ✅ FIXED: Grid is now responsive */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
           <div>
             <label className="text-xs font-bold text-gray-600 uppercase">
               Date
@@ -204,7 +196,6 @@ const ClassLogTab = () => {
             <label className="text-xs font-bold text-gray-600 uppercase">
               Batch
             </label>
-            {/* Update your batch dropdown to look like this */}
             <select
               required
               value={formData.batch}
@@ -295,7 +286,7 @@ const ClassLogTab = () => {
               onClick={() => setAttachMode("link")}
               className={`flex items-center gap-2 px-4 py-2 rounded text-sm font-bold border ${attachMode === "link" ? "bg-purple-100 border-purple-300 text-purple-700" : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"}`}
             >
-              <LinkIcon size={16} /> Paste Link (Drive/Heavy Files)
+              <LinkIcon size={16} /> Paste Link
             </button>
           </div>
 
@@ -311,13 +302,7 @@ const ClassLogTab = () => {
               />
               {isUploading && (
                 <p className="text-sm text-purple-600 font-bold flex items-center gap-2">
-                  <Loader size={14} className="animate-spin" /> Uploading to
-                  secure server...
-                </p>
-              )}
-              {!isUploading && formData.attachmentLink && (
-                <p className="text-sm text-green-600 font-bold flex items-center gap-1">
-                  ✓ File ready to be saved.
+                  <Loader size={14} className="animate-spin" /> Uploading...
                 </p>
               )}
             </div>
@@ -334,10 +319,6 @@ const ClassLogTab = () => {
                 }
                 className="w-full p-2 border rounded text-sm outline-none focus:border-purple-400"
               />
-              <p className="text-xs text-gray-400 mt-1">
-                Paste a Google Drive or external link for large
-                videos/documents.
-              </p>
             </div>
           )}
         </div>
@@ -363,7 +344,7 @@ const ClassLogTab = () => {
       </form>
 
       {/* --- DISPLAY LOGS --- */}
-      <div className="space-y-4">
+      <div className="space-y-4 w-full">
         {logs.length === 0 ? (
           <p className="text-center text-gray-500 italic p-8 bg-gray-50 rounded border border-dashed">
             No class logs recorded yet.
@@ -372,16 +353,16 @@ const ClassLogTab = () => {
           logs.map((log) => (
             <div
               key={log._id}
-              className="border border-gray-200 p-4 rounded-xl hover:shadow-md transition-shadow bg-white"
+              className="border border-gray-200 p-4 rounded-xl hover:shadow-md transition-shadow bg-white w-full"
             >
-              <div className="flex flex-col md:flex-row justify-between md:items-center border-b border-gray-100 pb-3 mb-3 gap-2">
-                <span className="font-bold text-purple-800 text-sm md:text-base">
+              <div className="flex flex-wrap justify-between items-center border-b border-gray-100 pb-3 mb-3 gap-2">
+                <span className="font-bold text-purple-800 text-sm md:text-base break-words">
                   {new Date(log.date).toLocaleDateString()} - {log.subject}{" "}
                   <span className="text-xs text-gray-500 font-normal">
                     ({log.std} - {log.batch})
                   </span>
                 </span>
-                <div className="flex gap-2">
+                <div className="flex gap-2 shrink-0">
                   <button
                     onClick={() => handleEdit(log)}
                     className="p-1.5 text-orange-500 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 rounded"
@@ -399,11 +380,11 @@ const ClassLogTab = () => {
                 </div>
               </div>
 
-              <p className="text-sm text-gray-800">
+              <p className="text-sm text-gray-800 break-words">
                 <strong className="text-gray-900">Taught:</strong>{" "}
                 {log.topicTaught}
               </p>
-              <p className="text-sm text-gray-800 mt-2">
+              <p className="text-sm text-gray-800 mt-2 break-words">
                 <strong className="text-gray-900">Homework:</strong>{" "}
                 {log.homework || (
                   <span className="text-gray-500 italic">None assigned</span>
@@ -420,9 +401,8 @@ const ClassLogTab = () => {
                     }
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 bg-purple-50 text-purple-700 border border-purple-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-purple-100 transition-colors shadow-sm w-full md:w-auto"
+                    className="inline-block text-xs font-bold text-blue-600 break-all underline"
                   >
-                    <LinkIcon size={16} />
                     Open Attached Material
                   </a>
                 </div>
