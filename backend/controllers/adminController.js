@@ -119,22 +119,44 @@ const getGlobalClassLogs = async (req, res) => {
 // =========================================================================
 
 // OPTION 1: COMPLETE RESET 
+// const purgeSystemAll = async (req, res) => {
+//     try {
+//         // Safe standard deletions
+//         await User.deleteMany({ role: 'student' });
+//         await Attendance.deleteMany({});
+//         await Message.deleteMany({});
+//         await ClassLog.deleteMany({});
+        
+//         // Smart Deletions: Checks uppercase and lowercase to prevent Render crashes!
+//         await safeDeleteMany('../models/Exam') || await safeDeleteMany('../models/exam');
+//         await safeDeleteMany('../models/Fee') || await safeDeleteMany('../models/fee') || await safeDeleteMany('../models/Fees');
+        
+//         // Gallery is safely skipped!
+//         res.json({ message: 'Complete platform reset processed successfully.' });
+//     } catch (err) { 
+//         console.error("System Purge Error:", err);
+//         res.status(500).json({ message: 'Error executing global database purges' }); 
+//     }
+// };
 const purgeSystemAll = async (req, res) => {
     try {
-        // Safe standard deletions
+        const User = require('../models/User');
+        const Attendance = require('../models/Attendance');
+        const Message = require('../models/Message');
+        const ClassLog = require('../models/ClassLog');
+        const Exam = require('../models/Exam');
+        const Fee = require('../models/Fee'); // Exactly matching your file!
+
         await User.deleteMany({ role: 'student' });
         await Attendance.deleteMany({});
         await Message.deleteMany({});
         await ClassLog.deleteMany({});
+        await Exam.deleteMany({});
+        await Fee.deleteMany({});
         
-        // Smart Deletions: Checks uppercase and lowercase to prevent Render crashes!
-        await safeDeleteMany('../models/Exam') || await safeDeleteMany('../models/exam');
-        await safeDeleteMany('../models/Fee') || await safeDeleteMany('../models/fee') || await safeDeleteMany('../models/Fees');
-        
-        // Gallery is safely skipped!
+        // Gallery is skipped to protect Hall of Fame
         res.json({ message: 'Complete platform reset processed successfully.' });
     } catch (err) { 
-        console.error("System Purge Error:", err);
         res.status(500).json({ message: 'Error executing global database purges' }); 
     }
 };
@@ -156,35 +178,53 @@ const deleteAllMessages = async (req, res) => {
 };
 
 // OPTION 4: ACADEMIC EXAMS DATA PURGE
+// const wipeExams = async (req, res) => {
+//     try {
+//         const success = await safeDeleteMany('../models/Exam') || await safeDeleteMany('../models/exam');
+//         if (success) return res.json({ message: 'All examinations collection dropped successfully.' });
+        
+//         res.status(404).json({ message: 'Exam file not found. Database skipped.' });
+//     } catch (error) { res.status(500).json({ message: 'Server Error purging exams history logs' }); }
+// };
 const wipeExams = async (req, res) => {
     try {
-        const success = await safeDeleteMany('../models/Exam') || await safeDeleteMany('../models/exam');
-        if (success) return res.json({ message: 'All examinations collection dropped successfully.' });
-        
-        res.status(404).json({ message: 'Exam file not found. Database skipped.' });
-    } catch (error) { res.status(500).json({ message: 'Server Error purging exams history logs' }); }
+        const Exam = require('../models/Exam');
+        await Exam.deleteMany({});
+        res.json({ message: 'All examinations collection dropped successfully.' });
+    } catch (error) { res.status(500).json({ message: 'Server Error purging exams' }); }
 };
-
 // OPTION 5: LEDGER BALANCE FINANCIAL WIPE
+// const wipeFees = async (req, res) => {
+//     try {
+//         const success = await safeDeleteMany('../models/Fee') || await safeDeleteMany('../models/fee') || await safeDeleteMany('../models/Fees');
+//         if (success) return res.json({ message: 'All student transaction structures purged successfully.' });
+        
+//         res.status(404).json({ message: 'Fee file not found. Database skipped.' });
+//     } catch (error) { res.status(500).json({ message: 'Server Error clearing accounting nodes' }); }
+// };
 const wipeFees = async (req, res) => {
     try {
-        const success = await safeDeleteMany('../models/Fee') || await safeDeleteMany('../models/fee') || await safeDeleteMany('../models/Fees');
-        if (success) return res.json({ message: 'All student transaction structures purged successfully.' });
-        
-        res.status(404).json({ message: 'Fee file not found. Database skipped.' });
-    } catch (error) { res.status(500).json({ message: 'Server Error clearing accounting nodes' }); }
+        const Fee = require('../models/Fee'); // Exactly matching your file!
+        await Fee.deleteMany({});
+        res.json({ message: 'All student transaction structures purged successfully.' });
+    } catch (error) { res.status(500).json({ message: 'Server Error clearing fees' }); }
 };
-
 // OPTION 6: INDEPENDENT HALL OF FAME GALLERY RESET
+// const wipeGallery = async (req, res) => {
+//     try {
+//         const success = await safeDeleteMany('../models/Achievement') || await safeDeleteMany('../models/achievement');
+//         if (success) return res.json({ message: 'Hall of Fame student gallery has been reset.' });
+        
+//         res.status(404).json({ message: 'Achievement file not found. Database skipped.' });
+//     } catch (error) { res.status(500).json({ message: 'Server Error resetting achievement records' }); }
+// };
 const wipeGallery = async (req, res) => {
     try {
-        const success = await safeDeleteMany('../models/Achievement') || await safeDeleteMany('../models/achievement');
-        if (success) return res.json({ message: 'Hall of Fame student gallery has been reset.' });
-        
-        res.status(404).json({ message: 'Achievement file not found. Database skipped.' });
-    } catch (error) { res.status(500).json({ message: 'Server Error resetting achievement records' }); }
+        const Achievement = require('../models/Achievement'); 
+        await Achievement.deleteMany({});
+        res.json({ message: 'Hall of Fame student gallery has been reset.' });
+    } catch (error) { res.status(500).json({ message: 'Server Error resetting gallery' }); }
 };
-
 module.exports = {
     getAdminStats, getTeachers, addTeacher, updateTeacher, toggleBlockUser, deleteUser, 
     getMessages, sendMessage, getGlobalClassLogs,
