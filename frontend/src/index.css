@@ -110,3 +110,8 @@ code {
   background: var(--code-bg);
 } */
  @import "tailwindcss";
+/* Add this to prevent the whole page from scrolling horizontally */
+html, body, #root {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
