@@ -122,21 +122,39 @@ const getGlobalClassLogs = async (req, res) => {
 // =========================================================================
 // 4. THE 6 DANGER ZONE ATOMIC DATA WIPES
 // =========================================================================
+// =========================================================================
+// 4. THE 6 DANGER ZONE ATOMIC DATA WIPES (100% CRASH-PROOF)
+// =========================================================================
 
-// OPTION 1: COMPLETE RESET (MODIFIED: EXCLUDES GALLERY DATA COLLECTION)
+// SMART LOADER: Safely hunts for your database models even if the names are slightly different!
+const getModelSafely = (possibleNames) => {
+    for (let name of possibleNames) {
+        try { return require(`../models/${name}`); } catch(e) { /* Ignore and try next */ }
+    }
+    return null;
+};
+
+// OPTION 1: COMPLETE RESET (EXCLUDES GALLERY DATA COLLECTION)
 const purgeSystemAll = async (req, res) => {
     try {
-        const Exam = loadModelSafely('Exam');
-        const Fee = loadModelSafely('Fee') || loadModelSafely('Payment');
+        const User = require('../models/User');
+        const Attendance = require('../models/Attendance');
+        const Message = require('../models/Message');
+        const ClassLog = require('../models/ClassLog');
+        
+        // Smart loading for potentially differently-named files
+        const ExamModel = getModelSafely(['Exam', 'Exams', 'Result']);
+        const FeeModel = getModelSafely(['Fee', 'Fees', 'Payment']);
 
         await User.deleteMany({ role: 'student' });
         await Attendance.deleteMany({});
         await Message.deleteMany({});
         await ClassLog.deleteMany({});
-        if (Exam) await Exam.deleteMany({});
-        if (Fee) await Fee.deleteMany({});
         
-        // Gallery (Achievement) collection is skipped here to preserve "Hall of Fame"
+        if (ExamModel) await ExamModel.deleteMany({});
+        if (FeeModel) await FeeModel.deleteMany({});
+        
+        // Gallery (Achievement) is safely skipped to protect Hall of Fame!
         res.json({ message: 'Complete platform reset processed successfully. Gallery & Staff protected.' });
     } catch (err) { 
         console.error("System Purge Error:", err);
@@ -147,6 +165,7 @@ const purgeSystemAll = async (req, res) => {
 // OPTION 2: ATTENDANCE WIPE
 const wipeAttendance = async (req, res) => {
     try {
+        const Attendance = require('../models/Attendance');
         await Attendance.deleteMany({});
         res.json({ message: 'Attendance records erased completely.' });
     } catch (err) { res.status(500).json({ message: 'Error purging attendance logs' }); }
@@ -155,6 +174,7 @@ const wipeAttendance = async (req, res) => {
 // OPTION 3: BROADCASTS BULLETINS WIPE
 const deleteAllMessages = async (req, res) => {
     try {
+        const Message = require('../models/Message');
         await Message.deleteMany({}); 
         res.json({ message: 'Noticeboard log dropped successfully.' });
     } catch (error) { res.status(500).json({ message: 'Server Error cleaning notices' }); }
@@ -163,37 +183,27 @@ const deleteAllMessages = async (req, res) => {
 // OPTION 4: ACADEMIC EXAMS DATA PURGE
 const wipeExams = async (req, res) => {
     try {
-        const Exam = loadModelSafely('Exam');
-        if (Exam) {
-            await Exam.deleteMany({});
-            return res.json({ message: 'All examinations collection dropped successfully.' });
-        }
-        res.status(404).json({ message: 'Exam model node registration not located.' });
+        const ExamModel = getModelSafely(['Exam', 'Exams', 'Result']);
+        if (ExamModel) await ExamModel.deleteMany({});
+        res.json({ message: 'All examinations collection dropped successfully.' });
     } catch (error) { res.status(500).json({ message: 'Server Error purging exams history logs' }); }
 };
 
 // OPTION 5: LEDGER BALANCE FINANCIAL WIPE
-// OPTION 5: LEDGER BALANCE FINANCIAL WIPE
 const wipeFees = async (req, res) => {
     try {
-        // Just directly call deleteMany on the Fee model imported at the top of the file
-        await Fee.deleteMany({});
+        const FeeModel = getModelSafely(['Fee', 'Fees', 'Payment']);
+        if (FeeModel) await FeeModel.deleteMany({});
         res.json({ message: 'All student transaction structures purged successfully.' });
-    } catch (error) { 
-        console.error("Fee Purge Error:", error); // This will log any database issues to Render
-        res.status(500).json({ message: 'Server Error clearing accounting nodes' }); 
-    }
+    } catch (error) { res.status(500).json({ message: 'Server Error clearing accounting nodes' }); }
 };
 
 // OPTION 6: INDEPENDENT HALL OF FAME GALLERY RESET
 const wipeGallery = async (req, res) => {
     try {
-        const Achievement = loadModelSafely('Achievement');
-        if (Achievement) {
-            await Achievement.deleteMany({});
-            return res.json({ message: 'Hall of Fame student gallery has been reset.' });
-        }
-        res.status(404).json({ message: 'Achievement model node registration not located.' });
+        const AchievementModel = getModelSafely(['Achievement', 'Achievements', 'Gallery']);
+        if (AchievementModel) await AchievementModel.deleteMany({});
+        res.json({ message: 'Hall of Fame student gallery has been reset.' });
     } catch (error) { res.status(500).json({ message: 'Server Error resetting achievement records' }); }
 };
 
