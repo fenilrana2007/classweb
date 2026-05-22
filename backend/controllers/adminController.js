@@ -173,15 +173,16 @@ const wipeExams = async (req, res) => {
 };
 
 // OPTION 5: LEDGER BALANCE FINANCIAL WIPE
+// OPTION 5: LEDGER BALANCE FINANCIAL WIPE
 const wipeFees = async (req, res) => {
     try {
-        const Fee = await Fee.deleteMany({});
-        if (Fee) {
-            await Fee.deleteMany({});
-            return res.json({ message: 'All student transaction structures purged successfully.' });
-        }
-        res.status(404).json({ message: 'Financial schema collection layer not located.' });
-    } catch (error) { res.status(500).json({ message: 'Server Error clearing accounting nodes' }); }
+        // Just directly call deleteMany on the Fee model imported at the top of the file
+        await Fee.deleteMany({});
+        res.json({ message: 'All student transaction structures purged successfully.' });
+    } catch (error) { 
+        console.error("Fee Purge Error:", error); // This will log any database issues to Render
+        res.status(500).json({ message: 'Server Error clearing accounting nodes' }); 
+    }
 };
 
 // OPTION 6: INDEPENDENT HALL OF FAME GALLERY RESET
