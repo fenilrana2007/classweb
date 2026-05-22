@@ -21,7 +21,7 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Hero Section */}
-      <main className="flex-grow flex items-center justify-center pt-16 pb-20 px-4 sm:px-6 lg:px-8">
+      <main className=" `flex-grow` flex items-center justify-center pt-16 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto text-center animate-fade-in">
           <div className="flex justify-center mb-6">
             <div className="bg-indigo-100 text-indigo-700 p-4 rounded-full">
@@ -29,7 +29,7 @@ const Home = () => {
             </div>
           </div>
           <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 tracking-tight mb-6">
-            Welcome to <span className="text-indigo-600">ClassWeb</span>
+            Welcome to <span className="text-indigo-600">Unique Coaching Class</span>
           </h1>
           <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto mb-10">
             The all-in-one tuition management platform. Seamlessly connect teachers, students, and administrators for a smarter learning experience.
@@ -80,7 +80,7 @@ const Home = () => {
       
       {/* Footer */}
       <footer className="bg-gray-900 py-8 text-center text-gray-400 text-sm">
-        <p>&copy; {new Date().getFullYear()} ClassWeb Tuition Management. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Unique Coaching Class. All rights reserved.</p>
       </footer>
     </div>
   );
