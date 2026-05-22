@@ -188,52 +188,7 @@ const OverviewTab = ({ stats, messages, classLogs }) => {
     }
   };
 
-  // const handlePurge = async (target, path, sectionTitle) => {
-  //   const confirmWipe = window.confirm(`🚨 DATA LOSS WARNING 🚨\nAre you sure you want to drop all data for [${sectionTitle}]?\n\nA complete Excel/CSV backup copy will be auto-downloaded for your files first.`);
-  //   if (!confirmWipe) return;
-
-  //   await handleBackupExport(target);
-
-  //   const secretKey = window.prompt(`Type "DELETE" to confirm data destruction for ${sectionTitle}:`);
-  //   if (secretKey === 'DELETE') {
-  //     try {
-  //       await api.delete(`/admin/${path}`);
-  //       alert(`Purge Completed successfully for: ${sectionTitle}`);
-  //       window.location.reload();
-  //     } catch (err) { alert("Server validation failed to execute deletion script."); }
-  //   } else {
-  //     alert("Mismatch. Destruction flow aborted safely.");
-  //   }
-  // };
-// const handlePurge = async (target, path, sectionTitle) => {
-//     const confirmWipe = window.confirm(`🚨 DATA LOSS WARNING 🚨\nAre you sure you want to drop all data for [${sectionTitle}]?\n\nA complete Excel/CSV backup copy will be auto-downloaded for your files first.`);
-//     if (!confirmWipe) return;
-
-//     await handleBackupExport(target);
-
-//     const secretKey = window.prompt(`Type "DELETE" to confirm data destruction for ${sectionTitle}:`);
-//     if (secretKey === 'DELETE') {
-//       try {
-//         // 1. Manually grab the security token from your browser's local storage
-//         const localData = localStorage.getItem('user') || localStorage.getItem('userInfo');
-//         const token = localData ? JSON.parse(localData).token : null;
-
-//         // 2. Force the token into the DELETE request's security headers
-//         await api.delete(`/admin/${path}`, {
-//             headers: { Authorization: `Bearer ${token}` }
-//         });
-        
-//         alert(`Purge Completed successfully for: ${sectionTitle}`);
-//         window.location.reload();
-//       } catch (err) { 
-//         // 3. Give us a clear alert if it still fails!
-//         alert(`Server execution failed: ${err.response?.data?.message || err.message}`); 
-//       }
-//     } else {
-//       alert("Mismatch. Destruction flow aborted safely.");
-//     }
-//   };
-const handlePurge = async (target, path, sectionTitle) => {
+ const handlePurge = async (target, path, sectionTitle) => {
     const confirmWipe = window.confirm(`🚨 DATA LOSS WARNING 🚨\nAre you sure you want to drop all data for [${sectionTitle}]?\n\nA complete Excel/CSV backup copy will be auto-downloaded for your files first.`);
     if (!confirmWipe) return;
 
@@ -242,14 +197,18 @@ const handlePurge = async (target, path, sectionTitle) => {
     const secretKey = window.prompt(`Type "DELETE" to confirm data destruction for ${sectionTitle}:`);
     if (secretKey === 'DELETE') {
       try {
-        // 1. Manually grab your Admin security token
         const localData = localStorage.getItem('user') || localStorage.getItem('userInfo');
         const token = localData ? JSON.parse(localData).token : null;
+        const config = { headers: { Authorization: `Bearer ${token}` } };
 
-        // 2. Force the token into the request so the backend doesn't block it!
-        await api.delete(`/admin/${path}`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        // 🌟 SMART ROUTING: If deleting fees, use your existing feeRoutes endpoint!
+        let endpointUrl = `/admin/${path}`;
+        if (target === 'fees') {
+            endpointUrl = '/fees/all-payments'; // Make sure this matches your main server.js prefix (e.g., /api/fees)
+        }
+
+        // Execute the deletion
+        await api.delete(endpointUrl, config);
         
         alert(`Purge Completed successfully for: ${sectionTitle}`);
         window.location.reload();
