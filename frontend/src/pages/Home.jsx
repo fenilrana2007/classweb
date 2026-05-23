@@ -136,7 +136,7 @@ const Home = () => {
         .animate-scroll {
           display: flex;
           width: max-content;
-          animation: scrollLeft 40s linear infinite;
+          animation: scrollLeft 20s linear infinite;
         }
         .animate-scroll:hover {
           animation-play-state: paused;
