@@ -1,0 +1,6 @@
+{
+  "appId": "com.unique.app",
+  "appName": "unique coaching class",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
