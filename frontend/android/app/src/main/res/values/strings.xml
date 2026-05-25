@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">unique coaching class</string>
+    <string name="title_activity_main">unique coaching class</string>
+    <string name="package_name">com.unique.app</string>
+    <string name="custom_url_scheme">com.unique.app</string>
+</resources>
