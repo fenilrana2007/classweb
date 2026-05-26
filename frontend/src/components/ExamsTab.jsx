@@ -389,7 +389,8 @@ import api from '../services/api';
 import { FileText, Plus, Download, Trash2, Edit3, TrendingUp, CheckCircle, XCircle } from 'lucide-react';
 import { STANDARD_OPTIONS } from './StudentsTab'; 
 import { AuthContext } from '../context/AuthContext';
-
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 const ExamsTab = () => {
   const { user: currentUser } = useContext(AuthContext);
   const [exams, setExams] = useState([]);
@@ -433,25 +434,61 @@ const ExamsTab = () => {
     } catch (err) { alert("Failed to create exam"); }
   };
 
-  const exportExamToCSV = (exam) => {
-    let csv = `Exam Name,${exam.name}\nStandard,${exam.std}\nMax Marks,${exam.maxMarks}\nPassing Marks,${exam.minPassMarks}\n\nStudent Name,Obtained Marks,Status,Percentage\n`;
+  // const exportExamToCSV = (exam) => {
+  //   let csv = `Exam Name,${exam.name}\nStandard,${exam.std}\nMax Marks,${exam.maxMarks}\nPassing Marks,${exam.minPassMarks}\n\nStudent Name,Obtained Marks,Status,Percentage\n`;
     
-    exam.marks.forEach(m => {
-      const name = m.studentId?.name || 'Unknown';
-      const status = m.isAbsent ? 'Absent' : (m.obtainedMarks >= exam.minPassMarks ? 'Pass' : 'Fail');
-      const percentage = m.isAbsent ? 0 : Math.round((m.obtainedMarks / exam.maxMarks) * 100);
-      csv += `"${name}","${m.obtainedMarks || 0}","${status}","${percentage}%"\n`;
-    });
+  //   exam.marks.forEach(m => {
+  //     const name = m.studentId?.name || 'Unknown';
+  //     const status = m.isAbsent ? 'Absent' : (m.obtainedMarks >= exam.minPassMarks ? 'Pass' : 'Fail');
+  //     const percentage = m.isAbsent ? 0 : Math.round((m.obtainedMarks / exam.maxMarks) * 100);
+  //     csv += `"${name}","${m.obtainedMarks || 0}","${status}","${percentage}%"\n`;
+  //   });
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  //   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  //   const link = document.createElement('a');
+  //   link.href = URL.createObjectURL(blob);
+  //   link.setAttribute('download', `${exam.name}_Results.csv`);
+  //   document.body.appendChild(link);
+  //   link.click();
+  //   document.body.removeChild(link);
+  // };
+const exportExamToCSV = async (exam) => {
+  let csvContent = `Exam Name,${exam.name}\nStandard,${exam.std}\nMax Marks,${exam.maxMarks}\nPassing Marks,${exam.minPassMarks}\n\nStudent Name,Obtained Marks,Status,Percentage\n`;
+  
+  exam.marks.forEach(m => {
+    const name = m.studentId?.name || 'Unknown';
+    const status = m.isAbsent ? 'Absent' : (m.obtainedMarks >= exam.minPassMarks ? 'Pass' : 'Fail');
+    const percentage = m.isAbsent ? 0 : Math.round((m.obtainedMarks / exam.maxMarks) * 100);
+    csvContent += `"${name}","${m.obtainedMarks || 0}","${status}","${percentage}%"\n`;
+  });
+
+  const fileName = `${exam.name}_Results.csv`;
+
+  // --- HYBRID CHECK ---
+  if (Capacitor.isNativePlatform()) {
+    // 📱 MOBILE APP METHOD (Saves to Android Documents folder)
+    try {
+      await Filesystem.writeFile({
+        path: fileName,
+        data: csvContent,
+        directory: Directory.Documents,
+        encoding: Encoding.UTF8,
+      });
+      alert(`Saved to your phone's Documents folder as ${fileName}`);
+    } catch (error) {
+      alert("Failed to save file on mobile: " + error.message);
+    }
+  } else {
+    // 💻 WEB BROWSER METHOD (Standard hidden link download)
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', `${exam.name}_Results.csv`);
+    link.setAttribute('download', fileName);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
+  }
+};
   const handleDeleteExam = async (exam) => {
     const confirm = window.confirm(`CRITICAL: You are about to delete the exam "${exam.name}".\n\nClicking OK will automatically download a backup CSV of the marks and permanently delete the exam.`);
     if (confirm) {

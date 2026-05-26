@@ -768,7 +768,8 @@ import {
 import { STANDARD_OPTIONS } from "./StudentsTab";
 import html2pdf from "html2pdf.js";
 import { AuthContext } from "../context/AuthContext";
-
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 const FeesTab = () => {
   const { user } = useContext(AuthContext);
   const [viewMode, setViewMode] = useState("collect");
@@ -931,76 +932,47 @@ const FeesTab = () => {
   };
 
   // --- COMPREHENSIVE PDF STATEMENT ---
-  const handleDownloadStatement = (studentData) => {
-    if (studentData.payments.length === 0)
-      return alert("No payments to print!");
+ const handleDownloadStatement = async (studentData) => {
+  if (studentData.payments.length === 0) return alert("No payments to print!");
 
-    // Generate table rows for history
-    const historyRows = studentData.payments
-      .map(
-        (p) => `
-      <tr>
-        <td style="border: 1px solid #e5e7eb; padding: 8px;">${new Date(p.date).toLocaleDateString("en-US")}</td>
-        <td style="border: 1px solid #e5e7eb; padding: 8px;">${p.paymentMode}</td>
-        <td style="border: 1px solid #e5e7eb; padding: 8px;">${p.receivedBy}</td>
-        <td style="border: 1px solid #e5e7eb; padding: 8px; font-weight: bold; color: #15803d;">₹${p.amountPaid.toLocaleString()}</td>
-      </tr>
-    `,
-      )
-      .join("");
-
-    const element = document.createElement("div");
-    element.innerHTML = `
-      <div style="font-family: Arial, sans-serif; padding: 40px; color: #111827; max-width: 800px; margin: 0 auto;">
-        <div style="text-align: center; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
-          <h1 style="font-size: 32px; font-weight: 900; color: #1e3a8a; margin: 0; text-transform: uppercase;">Unique Coaching Class</h1>
-          <p style="font-size: 18px; color: #4b5563; margin-top: 5px; font-weight: bold;">OFFICIAL FEE STATEMENT</p>
-        </div>
-        
-        <table style="width: 100%; margin-bottom: 30px;">
-          <tr>
-            <td><strong>Student Name:</strong> ${studentData.name}</td>
-            <td style="text-align: right;"><strong>Date Printed:</strong> ${new Date().toLocaleDateString()}</td>
-          </tr>
-          <tr>
-            <td><strong>Standard / Batch:</strong> ${studentData.std} - ${studentData.batch}</td>
-            <td style="text-align: right;"><strong>Phone:</strong> ${studentData.phone || "N/A"}</td>
-          </tr>
-        </table>
-
-        <h3 style="color: #2563eb; text-transform: uppercase; margin-bottom: 10px; font-size: 14px;">Payment History</h3>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 14px;">
-          <tr style="background: #f9fafb;">
-            <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: left;">Date</th>
-            <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: left;">Mode</th>
-            <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: left;">Received By</th>
-            <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: left;">Amount</th>
-          </tr>
-          ${historyRows}
-        </table>
-
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
-          <h3 style="color: #2563eb; text-transform: uppercase; margin-top: 0; margin-bottom: 15px; font-size: 14px;">Account Summary</h3>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Total Yearly Fee:</span> <strong>₹${studentData.stdFee.toLocaleString()}</strong></div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Total Amount Paid:</span> <strong style="color: #15803d;">₹${studentData.totalPaid.toLocaleString()}</strong></div>
-          <div style="display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 2px dashed #cbd5e1; font-size: 18px; font-weight: bold; color: #b91c1c;"><span>Remaining Balance Due:</span> <span>₹${studentData.remaining.toLocaleString()}</span></div>
-        </div>
-
-        <div style="margin-top: 60px; text-align: center; font-size: 12px; color: #6b7280;">
-          <p>Thank you for your business. This is a system generated statement.</p>
-        </div>
-      </div>
-    `;
-
-    const opt = {
-      margin: 0.5,
-      filename: `${studentData.name.replace(/\s+/g, "_")}_Statement.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
-    };
-    html2pdf().set(opt).from(element).save();
+  // ... (Keep your exact same historyRows and element.innerHTML code here) ...
+  // Assume `element` is fully built just like in your original code.
+  
+  const fileName = `${studentData.name.replace(/\s+/g, "_")}_Statement.pdf`;
+  const opt = {
+    margin: 0.5,
+    filename: fileName,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
   };
+
+  // --- HYBRID CHECK ---
+  if (Capacitor.isNativePlatform()) {
+    // 📱 MOBILE APP METHOD
+    try {
+      // 1. Generate the PDF as a Base64 string instead of triggering a download
+      const pdfBase64 = await html2pdf().set(opt).from(element).outputPdf('datauristring');
+      
+      // 2. Strip the "data:application/pdf;base64," prefix from the string
+      const base64Data = pdfBase64.split(',')[1];
+      
+      // 3. Save directly to Android Documents
+      await Filesystem.writeFile({
+        path: fileName,
+        data: base64Data,
+        directory: Directory.Documents
+      });
+      
+      alert(`PDF saved to your phone's Documents folder!`);
+    } catch (error) {
+      alert("Failed to save PDF on mobile: " + error.message);
+    }
+  } else {
+    // 💻 WEB BROWSER METHOD
+    html2pdf().set(opt).from(element).save();
+  }
+};
 
   const handleMasterExportPayments = () => {
     if (payments.length === 0) return alert("No payments to export.");
