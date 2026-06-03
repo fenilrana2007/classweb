@@ -400,6 +400,7 @@ import {
 import StudentsTab from '../components/StudentsTab'; 
 import ExamsTab from '../components/ExamsTab';
 import FeesTab from '../components/FeesTab';
+import { downloadFile } from '../services/downloadHelper';
 
 const standardOptions = [
   "1st Std", "2nd Std", "3rd Std", "4th Std", "5th Std", "6th Std", 
@@ -729,13 +730,8 @@ const AttendanceTab = ({ students }) => {
         csv += `"${r.name}","${r.std}","${r.batch}","${r.status}"\n`;
       });
     }
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', isMultiDay ? `Attendance_Ledger_Export.csv` : `Attendance_Report_${fetchDate}_${fetchStd}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const filename = isMultiDay ? `Attendance_Ledger_Export.csv` : `Attendance_Report_${fetchDate}_${fetchStd}.csv`;
+    downloadFile(csv, filename);
   };
 
   // Student Report Fetch Handler
@@ -782,13 +778,7 @@ const AttendanceTab = ({ students }) => {
     reportData.forEach(r => {
       csv += `"${r.date}","${r.std}","${r.batch}","${r.status}"\n`;
     });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', `${studentName}_Attendance_Report.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadFile(csv, `${studentName}_Attendance_Report.csv`);
   };
 
   // Trigger report fetch automatically on filter change

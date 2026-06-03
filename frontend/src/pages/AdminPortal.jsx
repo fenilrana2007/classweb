@@ -567,6 +567,7 @@ import ExamsTab from '../components/ExamsTab';
 import StudentsTab from '../components/StudentsTab';
 import FeesTab from '../components/FeesTab';
 import GalleryTab from '../components/GalleryTab';
+import { downloadFile } from '../services/downloadHelper';
 
 const STANDARD_OPTIONS = [
   "1st Std", "2nd Std", "3rd Std", "4th Std", "5th Std", "6th Std", 
@@ -691,14 +692,7 @@ const TabButton = ({ active, onClick, icon, text }) => (
    ========================================================================= */
 const OverviewTab = ({ stats, messages, classLogs }) => {
   const downloadCSV = (content, title) => {
-    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `${title}_Backup_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadFile(content, `${title}_Backup_${new Date().toISOString().split('T')[0]}.csv`);
   };
 
   const handleBackupExport = async (target) => {
@@ -957,13 +951,7 @@ const NoticeboardTab = ({ messages, setMessages }) => {
   const handleExport = () => {
     let csv = "Date,Sender,Recipient,Content\n";
     messages.forEach(m => { csv += `"${new Date(m.createdAt).toLocaleDateString()}","${m.sender?.name || 'Unknown'}","${m.recipientGroup}","${m.content.replace(/"/g, '""')}"\n`; });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', 'Noticeboard_Audit_Logs.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadFile(csv, 'Noticeboard_Audit_Logs.csv');
   };
 
   const handleClear = async () => {
@@ -1243,13 +1231,7 @@ const AdminAttendanceTab = () => {
     reportData.forEach(r => {
       csv += `"${r.date}","${r.std}","${r.batch}","${r.status}"\n`;
     });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', `${studentName}_Attendance_Report.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadFile(csv, `${studentName}_Attendance_Report.csv`);
   };
 
   const handleExportBatchOverview = () => {
@@ -1258,13 +1240,7 @@ const AdminAttendanceTab = () => {
     batchData.forEach(r => {
       csv += `"${r.name}","${r.std}","${r.batch}",${r.present},${r.total},"${r.percentage}%"\n`;
     });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', `Batch_Attendance_Overview_${batchMonth}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadFile(csv, `Batch_Attendance_Overview_${batchMonth}.csv`);
   };
 
   // Student mode stats

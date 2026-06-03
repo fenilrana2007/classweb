@@ -391,6 +391,7 @@ import { STANDARD_OPTIONS } from './StudentsTab';
 import { AuthContext } from '../context/AuthContext';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { downloadFile } from "../services/downloadHelper";
 const ExamsTab = () => {
   const { user: currentUser } = useContext(AuthContext);
   const [exams, setExams] = useState([]);
@@ -463,31 +464,7 @@ const exportExamToCSV = async (exam) => {
   });
 
   const fileName = `${exam.name}_Results.csv`;
-
-  // --- HYBRID CHECK ---
-  if (Capacitor.isNativePlatform()) {
-    // 📱 MOBILE APP METHOD (Saves to Android Documents folder)
-    try {
-      await Filesystem.writeFile({
-        path: fileName,
-        data: csvContent,
-        directory: Directory.Documents,
-        encoding: Encoding.UTF8,
-      });
-      alert(`Saved to your phone's Documents folder as ${fileName}`);
-    } catch (error) {
-      alert("Failed to save file on mobile: " + error.message);
-    }
-  } else {
-    // 💻 WEB BROWSER METHOD (Standard hidden link download)
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
+  downloadFile(csvContent, fileName);
 };
   const handleDeleteExam = async (exam) => {
     const confirm = window.confirm(`CRITICAL: You are about to delete the exam "${exam.name}".\n\nClicking OK will automatically download a backup CSV of the marks and permanently delete the exam.`);
@@ -562,13 +539,7 @@ const exportExamToCSV = async (exam) => {
       csvContent += `"${exam.std}","${exam.batch}","${exam.name}","${exam.maxMarks}","${exam.minPassMarks}","${date}","${exam.marks.length}"\n`;
     });
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', `Master_Exams_Backup_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadFile(csvContent, `Master_Exams_Backup_${new Date().toISOString().split('T')[0]}.csv`);
   };
 
   const handleMasterDeleteAllExams = async () => {

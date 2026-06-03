@@ -770,6 +770,7 @@ import html2pdf from "html2pdf.js";
 import { AuthContext } from "../context/AuthContext";
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { downloadFile } from "../services/downloadHelper";
 const FeesTab = () => {
   const { user } = useContext(AuthContext);
   const [viewMode, setViewMode] = useState("collect");
@@ -994,16 +995,7 @@ const FeesTab = () => {
       csvContent += `"${std}","${batch}","${name}","${p.amountPaid}","${p.paymentMode}","${p.paidBy}","${p.receivedBy}","${date}"\n`;
     });
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute(
-      "download",
-      `Master_Financial_Backup_${new Date().toISOString().split("T")[0]}.csv`,
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadFile(csvContent, `Master_Financial_Backup_${new Date().toISOString().split("T")[0]}.csv`);
   };
 
   const handleMasterDeleteAllPayments = async () => {
