@@ -545,8 +545,9 @@
 //   );
 // };
 // export default StudentPortal;
-// src/pages/StudentPortal.jsx
 import html2pdf from 'html2pdf.js';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
@@ -920,7 +921,22 @@ const MyFeesTab = () => {
       jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
 
-    html2pdf().set(opt).from(element).save();
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const pdfBase64 = await html2pdf().set(opt).from(element).outputPdf('datauristring');
+        const base64Data = pdfBase64.split(',')[1];
+        await Filesystem.writeFile({
+          path: `${user.name.replace(/\s+/g, '_')}_Fee_Statement.pdf`,
+          data: base64Data,
+          directory: Directory.Documents
+        });
+        alert(`PDF saved to your phone's Documents folder!`);
+      } catch (error) {
+        alert("Failed to save PDF on mobile: " + error.message);
+      }
+    } else {
+      html2pdf().set(opt).from(element).save();
+    }
   };
 
   if (!feeData) return <div className="p-8 text-center animate-pulse text-gray-500 font-bold">Loading fee details...</div>;
