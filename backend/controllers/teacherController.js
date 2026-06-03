@@ -89,17 +89,41 @@ const submitAttendance = async (req, res) => {
 
 const getAttendance = async (req, res) => {
     try {
-        const { date, std, batch } = req.query;
+        const { date, std, batch, month } = req.query;
         let query = {};
         
         // UPGRADE: If date is 'All', do not filter by date. Fetch the whole ledger instead.
-        if (date && date !== 'All') query.date = date;
+        if (date && date !== 'All') {
+            query.date = date;
+        } else if (month && month !== 'All') {
+            query.date = { $regex: new RegExp('^' + month) };
+        }
+        
         if (std && std !== 'All') query.std = std;
         if (batch && batch !== 'All') query.batch = batch;
 
         const attendanceRecords = await Attendance.find(query).populate('records.studentId', 'name std batch');
         res.json(attendanceRecords);
     } catch (error) { res.status(500).json({ message: 'Server Error Fetching Attendance' }); }
+};
+
+const getStudentAttendanceSummary = async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const { month } = req.query;
+        let query = { 'records.studentId': studentId };
+        
+        if (month && month !== 'All') {
+            query.date = { $regex: new RegExp('^' + month) };
+        }
+        
+        const attendanceRecords = await Attendance.find(query)
+            .populate('records.studentId', 'name std batch')
+            .populate('submittedBy', 'name role')
+            .sort({ date: -1 });
+            
+        res.json(attendanceRecords);
+    } catch (error) { res.status(500).json({ message: 'Server Error Fetching Student Attendance Summary' }); }
 };
 
 const deleteAttendance = async (req, res) => {
@@ -165,7 +189,7 @@ const deleteClassLog = async (req, res) => {
 
 module.exports = {
     getTeacherStats, getStudents, addStudent, updateStudent, toggleBlockStudent, deleteStudent, 
-    submitAttendance, getAttendance, deleteAttendance, wipeAllAttendance, 
+    submitAttendance, getAttendance, getStudentAttendanceSummary, deleteAttendance, wipeAllAttendance, 
     sendMessage, getMessages, 
     createClassLog, getClassLogs, updateClassLog, deleteClassLog
 };

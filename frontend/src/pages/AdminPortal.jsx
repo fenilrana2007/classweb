@@ -561,7 +561,7 @@ import api from '../services/api';
 import { 
   ShieldCheck, Users, LayoutDashboard, UserPlus, 
   Ban, Edit, Trash2, Send, Bell, Clock, Download, FileText,
-  GraduationCap, Menu, X, IndianRupee, Printer, Image, BookOpen, Filter, AlertTriangle
+  GraduationCap, Menu, X, IndianRupee, Printer, Image, BookOpen, Filter, AlertTriangle, CheckSquare
 } from 'lucide-react';
 import ExamsTab from '../components/ExamsTab';
 import StudentsTab from '../components/StudentsTab';
@@ -644,6 +644,7 @@ const AdminPortal = () => {
           {activeTab === 'fees' && <><IndianRupee size={18} /> Fee Management</>}
           {activeTab === 'classlogs' && <><BookOpen size={18} /> Teacher Logs</>}
           {activeTab === 'gallery' && <><Image size={18} /> Gallery</>}
+          {activeTab === 'attendance' && <><CheckSquare size={18}/> Attendance Analysis</>}
         </span>
         <button className="text-gray-900 focus:outline-none bg-gray-100 p-1 rounded">
           {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -657,6 +658,7 @@ const AdminPortal = () => {
         <TabButton active={activeTab === 'noticeboard'} onClick={() => handleTabSwitch('noticeboard')} icon={<Bell size={18} />} text="Noticeboard" />
         <TabButton active={activeTab === 'broadcast'} onClick={() => handleTabSwitch('broadcast')} icon={<Send size={18} />} text="Broadcast" />
         <TabButton active={activeTab === 'students'} onClick={() => handleTabSwitch('students')} icon={<GraduationCap size={18} />} text="Manage Students" />
+        <TabButton active={activeTab === 'attendance'} onClick={() => handleTabSwitch('attendance')} icon={<CheckSquare size={18} />} text="Attendance" />
         <TabButton active={activeTab === 'exams'} onClick={() => handleTabSwitch('exams')} icon={<FileText size={18} />} text="Examinations" />
         <TabButton active={activeTab === 'fees'} onClick={() => handleTabSwitch('fees')} icon={<IndianRupee size={18} />} text="Fee Management" />
         <TabButton active={activeTab === 'classlogs'} onClick={() => handleTabSwitch('classlogs')} icon={<BookOpen size={18} />} text="Teacher Logs" />
@@ -673,6 +675,7 @@ const AdminPortal = () => {
       {activeTab === 'fees' && <FeesTab />} 
       {activeTab === 'classlogs' && <TeacherLogsTab classLogs={classLogs} />}
       {activeTab === 'gallery' && <GalleryTab isAdmin={true} />}
+      {activeTab === 'attendance' && <AdminAttendanceTab />}
     </div>
   );
 };
@@ -1093,6 +1096,517 @@ const TeacherLogsTab = ({ classLogs }) => {
           ))
         )}
       </div>
+    </div>
+  );
+};
+
+/* ==========================================
+   6. ATTENDANCE AUDIT TAB
+   ========================================== */
+const AdminAttendanceTab = () => {
+  const [mode, setMode] = useState('student'); // 'student' or 'batch'
+  const [students, setStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+
+  // Student Mode States
+  const [studentId, setStudentId] = useState('');
+  const [month, setMonth] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [reportData, setReportData] = useState([]);
+  const [reportLoading, setReportLoading] = useState(false);
+
+  // Batch Mode States
+  const [batchStd, setBatchStd] = useState('All');
+  const [batchBatch, setBatchBatch] = useState('All');
+  const [batchMonth, setBatchMonth] = useState(new Date().toISOString().split('T')[0].substring(0, 7)); // Default to current YYYY-MM
+  const [batchData, setBatchData] = useState([]);
+  const [batchLoading, setBatchLoading] = useState(false);
+
+  // Load all students on mount
+  useEffect(() => {
+    const fetchStudents = async () => {
+      setLoadingStudents(true);
+      try {
+        const res = await api.get('/students');
+        setStudents(res.data || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingStudents(false);
+      }
+    };
+    fetchStudents();
+  }, []);
+
+  // Fetch Student Report
+  const handleFetchStudentReport = async () => {
+    if (!studentId) return;
+    setReportLoading(true);
+    try {
+      const res = await api.get(`/admin/attendance/student/${studentId}?month=${month || 'All'}`);
+      let records = res.data.map(doc => {
+        const studentRec = doc.records.find(r => {
+          const sId = typeof r.studentId === 'object' ? r.studentId._id : r.studentId;
+          return sId.toString() === studentId.toString();
+        });
+        return {
+          date: doc.date,
+          std: doc.std,
+          batch: doc.batch,
+          status: studentRec ? studentRec.status : 'N/A'
+        };
+      });
+
+      if (startDate) {
+        records = records.filter(r => r.date >= startDate);
+      }
+      if (endDate) {
+        records = records.filter(r => r.date <= endDate);
+      }
+
+      setReportData(records);
+    } catch (err) {
+      alert("Failed to load student attendance");
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (mode === 'student' && studentId) {
+      handleFetchStudentReport();
+    }
+  }, [studentId, month, startDate, endDate, mode]);
+
+  // Fetch Batch Overview
+  const handleFetchBatchOverview = async () => {
+    if (!batchMonth) return alert("Please select a month.");
+    setBatchLoading(true);
+    try {
+      const res = await api.get(`/teacher/attendance?std=${batchStd}&batch=${batchBatch}&month=${batchMonth}`);
+      const docs = res.data || [];
+      
+      const targetStudents = students.filter(s => 
+        (batchStd === 'All' || s.std === batchStd) &&
+        (batchBatch === 'All' || s.batch === batchBatch)
+      );
+
+      const studentStats = {};
+      targetStudents.forEach(s => {
+        studentStats[s._id] = { name: s.name, std: s.std, batch: s.batch, present: 0, total: 0 };
+      });
+
+      docs.forEach(doc => {
+        doc.records.forEach(r => {
+          const sId = typeof r.studentId === 'object' ? r.studentId._id : r.studentId;
+          if (sId && studentStats[sId]) {
+            studentStats[sId].total += 1;
+            if (r.status === 'Present') {
+              studentStats[sId].present += 1;
+            }
+          }
+        });
+      });
+
+      const list = Object.values(studentStats).map(stat => {
+        const pct = stat.total > 0 ? Math.round((stat.present / stat.total) * 100) : 0;
+        return {
+          ...stat,
+          percentage: pct
+        };
+      });
+
+      list.sort((a, b) => b.percentage - a.percentage);
+      setBatchData(list);
+    } catch (err) {
+      alert("Failed to load batch overview");
+    } finally {
+      setBatchLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (mode === 'batch' && batchMonth && students.length > 0) {
+      handleFetchBatchOverview();
+    }
+  }, [batchStd, batchBatch, batchMonth, mode, students]);
+
+  // Exports
+  const handleExportStudentReport = () => {
+    if (reportData.length === 0) return alert("No report data available to export.");
+    const selectedStudent = students.find(s => s._id === studentId);
+    const studentName = selectedStudent ? selectedStudent.name : "Student";
+    
+    let csv = "Date,Standard,Batch,Status\n";
+    reportData.forEach(r => {
+      csv += `"${r.date}","${r.std}","${r.batch}","${r.status}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `${studentName}_Attendance_Report.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportBatchOverview = () => {
+    if (batchData.length === 0) return alert("No batch data to export.");
+    let csv = "Student Name,Standard,Batch,Present Days,Total Days,Percentage\n";
+    batchData.forEach(r => {
+      csv += `"${r.name}","${r.std}","${r.batch}",${r.present},${r.total},"${r.percentage}%"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `Batch_Attendance_Overview_${batchMonth}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Student mode stats
+  const totalDays = reportData.length;
+  const presentDays = reportData.filter(r => r.status === 'Present').length;
+  const absentDays = reportData.filter(r => r.status === 'Absent').length;
+  const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+
+  const monthlySummary = getMonthlySummary();
+
+  function getMonthlySummary() {
+    const months = {};
+    reportData.forEach(r => {
+      const monthKey = r.date.substring(0, 7);
+      if (!months[monthKey]) {
+        months[monthKey] = { present: 0, total: 0 };
+      }
+      months[monthKey].total += 1;
+      if (r.status === 'Present') {
+        months[monthKey].present += 1;
+      }
+    });
+
+    const summaryList = Object.keys(months).map(mKey => {
+      const [year, month] = mKey.split('-');
+      const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
+      const monthName = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+      const stat = months[mKey];
+      const percentage = stat.total > 0 ? Math.round((stat.present / stat.total) * 100) : 0;
+      return {
+        key: mKey,
+        monthName,
+        present: stat.present,
+        total: stat.total,
+        percentage
+      };
+    });
+
+    summaryList.sort((a, b) => b.key.localeCompare(a.key));
+    return summaryList;
+  }
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 animate-fade-in">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-gray-100 pb-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2"><CheckSquare className="text-gray-900" /> Attendance Audit Panel</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Audit student attendance ledgers, monthly trends, and batch metrics.</p>
+        </div>
+        <div className="flex bg-gray-100 p-1 rounded-lg w-full md:w-auto shrink-0">
+          <button 
+            onClick={() => setMode('student')} 
+            className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${mode === 'student' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+          >
+            Student Profile
+          </button>
+          <button 
+            onClick={() => setMode('batch')} 
+            className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${mode === 'batch' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+          >
+            Batch Overview
+          </button>
+        </div>
+      </div>
+
+      {mode === 'student' && (
+        <div className="space-y-6">
+          {/* Filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Select Student</label>
+              <select 
+                value={studentId} 
+                onChange={e => setStudentId(e.target.value)} 
+                className="w-full p-2.5 border rounded-lg text-sm bg-white"
+              >
+                <option value="">-- Choose Student --</option>
+                {students.map(s => (
+                  <option key={s._id} value={s._id}>{s.name} ({s.std || 'N/A'} - {s.batch || 'N/A'})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Filter by Month</label>
+              <input 
+                type="month" 
+                value={month} 
+                onChange={e => setMonth(e.target.value)} 
+                className="w-full p-2.5 border rounded-lg text-sm bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">From Date</label>
+              <input 
+                type="date" 
+                value={startDate} 
+                onChange={e => setStartDate(e.target.value)} 
+                className="w-full p-2.5 border rounded-lg text-sm bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">To Date</label>
+              <input 
+                type="date" 
+                value={endDate} 
+                onChange={e => setEndDate(e.target.value)} 
+                className="w-full p-2.5 border rounded-lg text-sm bg-white"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+              <label className="inline-flex items-center gap-2 text-xs font-bold text-gray-700 mr-2">Status Filter:</label>
+              <select 
+                value={statusFilter} 
+                onChange={e => setStatusFilter(e.target.value)} 
+                className="p-2 border rounded-lg text-sm bg-white font-semibold text-purple-700"
+              >
+                <option value="All">All Records</option>
+                <option value="Present">Present Only</option>
+                <option value="Absent">Absent Only</option>
+              </select>
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button 
+                onClick={handleFetchStudentReport} 
+                disabled={reportLoading}
+                className="flex-1 sm:flex-none px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-bold text-sm shadow transition-colors"
+              >
+                {reportLoading ? 'Loading...' : 'Refresh'}
+              </button>
+              <button 
+                onClick={handleExportStudentReport} 
+                className="flex-1 sm:flex-none px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-sm shadow flex items-center justify-center gap-1 transition-colors"
+              >
+                <Download size={16}/> Export CSV
+              </button>
+            </div>
+          </div>
+
+          {/* Stats Dashboard */}
+          {studentId && reportData.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+              <div className="bg-purple-50 border border-purple-100 p-4 rounded-xl text-center shadow-sm">
+                <p className="text-xs font-semibold text-purple-600 uppercase tracking-wider">Total Days</p>
+                <h3 className="text-xl md:text-2xl font-black text-purple-900 mt-1">{totalDays}</h3>
+              </div>
+              <div className="bg-green-50 border border-green-100 p-4 rounded-xl text-center shadow-sm">
+                <p className="text-xs font-semibold text-green-600 uppercase tracking-wider">Present</p>
+                <h3 className="text-xl md:text-2xl font-black text-green-900 mt-1">{presentDays}</h3>
+              </div>
+              <div className="bg-red-50 border border-red-100 p-4 rounded-xl text-center shadow-sm">
+                <p className="text-xs font-semibold text-red-600 uppercase tracking-wider">Absent</p>
+                <h3 className="text-xl md:text-2xl font-black text-red-900 mt-1">{absentDays}</h3>
+              </div>
+              <div className={`p-4 rounded-xl text-center border shadow-sm ${
+                attendancePercentage >= 80 ? 'bg-emerald-50 border-emerald-100' :
+                attendancePercentage >= 60 ? 'bg-amber-50 border-amber-100' :
+                'bg-rose-50 border-rose-100'
+              }`}>
+                <p className={`text-xs font-semibold uppercase tracking-wider ${
+                  attendancePercentage >= 80 ? 'text-emerald-600' :
+                  attendancePercentage >= 60 ? 'text-amber-600' :
+                  'text-rose-600'
+                }`}>Percentage</p>
+                <h3 className={`text-xl md:text-2xl font-black mt-1 ${
+                  attendancePercentage >= 80 ? 'text-emerald-900' :
+                  attendancePercentage >= 60 ? 'text-amber-900' :
+                  'text-rose-900'
+                }`}>{attendancePercentage}%</h3>
+              </div>
+            </div>
+          )}
+
+          {/* Month-wise Attendance Table */}
+          {studentId && monthlySummary.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-bold text-gray-900">Month-wise Attendance Summary</h3>
+              <div className="w-full overflow-x-auto border rounded-xl bg-white shadow-sm">
+                <table className="w-full text-left border-collapse min-w-[400px]">
+                  <thead>
+                    <tr className="bg-gray-100 border-b">
+                      <th className="p-3 text-xs font-bold text-gray-700">Month</th>
+                      <th className="p-3 text-xs font-bold text-gray-700 text-center">Present Days / Total Days</th>
+                      <th className="p-3 text-xs font-bold text-gray-700 text-right">Percentage</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthlySummary.map(mSummary => (
+                      <tr key={mSummary.key} className="border-b hover:bg-gray-50">
+                        <td className="p-3 text-sm font-bold text-gray-900">{mSummary.monthName}</td>
+                        <td className="p-3 text-sm text-gray-600 text-center">{mSummary.present} / {mSummary.total}</td>
+                        <td className="p-3 text-right">
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                            mSummary.percentage >= 80 ? 'bg-green-100 text-green-700' :
+                            mSummary.percentage >= 60 ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>{mSummary.percentage}%</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Detailed Ledger Table */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold text-gray-900">Detailed Attendance Ledger</h3>
+            <div className="w-full overflow-x-auto border rounded-xl bg-white shadow-sm">
+              <table className="w-full text-left border-collapse min-w-[500px]">
+                <thead>
+                  <tr className="bg-gray-100 border-b">
+                    <th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700">Date</th>
+                    <th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700">Standard / Batch</th>
+                    <th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {!studentId ? (
+                    <tr>
+                      <td colSpan="3" className="p-6 md:p-8 text-center text-sm text-gray-500 italic">Please select a student from the dropdown.</td>
+                    </tr>
+                  ) : reportData.filter(r => statusFilter === 'All' || r.status === statusFilter).length === 0 ? (
+                    <tr>
+                      <td colSpan="3" className="p-6 md:p-8 text-center text-sm text-gray-500 italic">No attendance records found matching filters.</td>
+                    </tr>
+                  ) : (
+                    reportData
+                      .filter(r => statusFilter === 'All' || r.status === statusFilter)
+                      .map((record, idx) => (
+                        <tr key={idx} className="border-b hover:bg-gray-50">
+                          <td className="p-3 md:p-4 text-sm font-bold text-gray-900">{record.date}</td>
+                          <td className="p-3 md:p-4 text-xs md:text-sm text-gray-600">{record.std} • {record.batch}</td>
+                          <td className="p-3 md:p-4 text-right">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              record.status === 'Present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            }`}>{record.status}</span>
+                          </td>
+                        </tr>
+                      ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mode === 'batch' && (
+        <div className="space-y-6">
+          {/* Filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Standard</label>
+              <select 
+                value={batchStd} 
+                onChange={e => setBatchStd(e.target.value)} 
+                className="w-full p-2.5 border rounded-lg text-sm bg-white"
+              >
+                <option value="All">All Standards</option>
+                {STANDARD_OPTIONS.map(std => <option key={std} value={std}>{std}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Batch</label>
+              <select 
+                value={batchBatch} 
+                onChange={e => setBatchBatch(e.target.value)} 
+                className="w-full p-2.5 border rounded-lg text-sm bg-white"
+              >
+                <option value="All">All Batches</option>
+                <option value="Morning">Morning</option>
+                <option value="Evening">Evening</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Select Month</label>
+              <input 
+                type="month" 
+                value={batchMonth} 
+                onChange={e => setBatchMonth(e.target.value)} 
+                className="w-full p-2.5 border rounded-lg text-sm bg-white"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button 
+              onClick={handleFetchBatchOverview} 
+              disabled={batchLoading}
+              className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-bold text-sm shadow transition-colors"
+            >
+              {batchLoading ? 'Loading...' : 'Refresh'}
+            </button>
+            <button 
+              onClick={handleExportBatchOverview} 
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-sm shadow flex items-center justify-center gap-1 transition-colors"
+            >
+              <Download size={16}/> Export CSV
+            </button>
+          </div>
+
+          {/* Table */}
+          <div className="w-full overflow-x-auto border rounded-xl bg-white shadow-sm">
+            <table className="w-full text-left border-collapse min-w-[500px]">
+              <thead>
+                <tr className="bg-gray-100 border-b">
+                  <th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700">Student Name</th>
+                  <th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700">Standard / Batch</th>
+                  <th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700 text-center">Present Days / Total Days</th>
+                  <th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700 text-right">Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {batchData.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="p-6 md:p-8 text-center text-sm text-gray-500 italic">No students found or no attendance sheets recorded for this month.</td>
+                  </tr>
+                ) : (
+                  batchData.map((record, idx) => (
+                    <tr key={idx} className="border-b hover:bg-gray-50">
+                      <td className="p-3 md:p-4 text-sm font-bold text-gray-900">{record.name}</td>
+                      <td className="p-3 md:p-4 text-xs md:text-sm text-gray-600">{record.std} • {record.batch}</td>
+                      <td className="p-3 md:p-4 text-sm text-gray-600 text-center">{record.present} / {record.total}</td>
+                      <td className="p-3 md:p-4 text-right">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          record.percentage >= 80 ? 'bg-green-100 text-green-700' :
+                          record.percentage >= 60 ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>{record.percentage}%</span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

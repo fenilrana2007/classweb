@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { 
     getTeacherStats, getStudents, addStudent, updateStudent, toggleBlockStudent, deleteStudent, 
-    submitAttendance, getAttendance, deleteAttendance, wipeAllAttendance, // <- Exported new functions
+    submitAttendance, getAttendance, getStudentAttendanceSummary, deleteAttendance, wipeAllAttendance, // <- Exported new functions
     sendMessage, getMessages, 
     createClassLog, getClassLogs, updateClassLog, deleteClassLog
 
@@ -31,6 +31,7 @@ router.delete('/class-logs/:id', protect, deleteClassLog);
 
 router.post('/attendance', protect, submitAttendance);
 router.get('/attendance', protect, getAttendance);
+router.get('/attendance/student/:studentId', protect, getStudentAttendanceSummary);
 router.delete('/attendance', protect, wipeAllAttendance);   // Must be BEFORE /:id route
 router.delete('/attendance/:id', protect, deleteAttendance);
 module.exports = router;

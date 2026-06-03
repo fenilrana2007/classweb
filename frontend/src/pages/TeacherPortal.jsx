@@ -549,16 +549,32 @@ const AttendanceTab = ({ students }) => {
   const [addBatch, setAddBatch] = useState('All');
   const [markMode, setMarkMode] = useState('markPresent');
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [recordSearch, setRecordSearch] = useState('');
 
   const [fetchDate, setFetchDate] = useState(new Date().toISOString().split('T')[0]);
+  const [fetchMonth, setFetchMonth] = useState('');
   const [fetchStd, setFetchStd] = useState('All');
   const [fetchBatch, setFetchBatch] = useState('All');
   const [viewStatusFilter, setViewStatusFilter] = useState('All');
   const [viewData, setViewData] = useState([]);
+  const [isMultiDay, setIsMultiDay] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [currentAttendanceDocId, setCurrentAttendanceDocId] = useState(null); 
 
+  // Student Report Tab States
+  const [reportStudentId, setReportStudentId] = useState('');
+  const [reportMonth, setReportMonth] = useState('');
+  const [reportStartDate, setReportStartDate] = useState('');
+  const [reportEndDate, setReportEndDate] = useState('');
+  const [reportStatusFilter, setReportStatusFilter] = useState('All');
+  const [reportData, setReportData] = useState([]);
+  const [reportLoading, setReportLoading] = useState(false);
+
   const filteredStudents = students.filter(s => (addStd === 'All' || s.std === addStd) && (addBatch === 'All' || s.batch === addBatch));
+  
+  const recordFilteredStudents = filteredStudents.filter(s => 
+    s.name.toLowerCase().includes(recordSearch.toLowerCase())
+  );
 
   const toggleStudent = (id) => {
     const newSet = new Set(selectedIds);
@@ -581,48 +597,93 @@ const AttendanceTab = ({ students }) => {
       setFetchDate(addDate);
       setFetchStd(addStd);
       setFetchBatch(addBatch);
+      setFetchMonth('');
       setTabMode('view');
-      handleFetchAttendance(addDate, addStd, addBatch);
+      handleFetchAttendance(addDate, addStd, addBatch, '');
     } catch (err) { alert("Failed to save attendance."); }
   };
 
-  const handleFetchAttendance = async (overrideDate, overrideStd, overrideBatch) => {
+  const handleFetchAttendance = async (overrideDate, overrideStd, overrideBatch, overrideMonth) => {
     setIsFetching(true);
-    const d = overrideDate || fetchDate;
+    const d = overrideDate !== undefined ? overrideDate : fetchDate;
     const s = overrideStd || fetchStd;
     const b = overrideBatch || fetchBatch;
+    const m = overrideMonth !== undefined ? overrideMonth : fetchMonth;
 
     try {
-      const res = await api.get(`/teacher/attendance?date=${d}&std=${s}&batch=${b}`);
-      const expectedStudents = students.filter(student => (s === 'All' || student.std === s) && (b === 'All' || student.batch === b));
+      let url = `/teacher/attendance?std=${s}&batch=${b}`;
+      if (d) {
+        url += `&date=${d}`;
+      } else if (m) {
+        url += `&month=${m}`;
+      } else {
+        url += `&date=All`;
+      }
       
-      const presentIds = new Set();
-      let docId = null;
-
-      if (res.data && res.data.length > 0) {
-        docId = res.data[0]._id;
-        res.data.forEach(recordDoc => recordDoc.records.forEach(r => {
+      const res = await api.get(url);
+      
+      if (res.data && res.data.length > 1) {
+        setIsMultiDay(true);
+        const sheets = res.data.map(doc => {
+          const presentCount = doc.records.filter(r => r.status === 'Present').length;
+          const absentCount = doc.records.filter(r => r.status === 'Absent').length;
+          return {
+            id: doc._id,
+            date: doc.date,
+            std: doc.std,
+            batch: doc.batch,
+            presentCount,
+            absentCount
+          };
+        });
+        sheets.sort((a, b) => b.date.localeCompare(a.date));
+        setViewData(sheets);
+        setCurrentAttendanceDocId(null);
+      } else if (res.data && res.data.length === 1) {
+        setIsMultiDay(false);
+        const doc = res.data[0];
+        const docId = doc._id;
+        setCurrentAttendanceDocId(docId);
+        
+        const expectedStudents = students.filter(student => (s === 'All' || student.std === s) && (b === 'All' || student.batch === b));
+        
+        const presentIds = new Set();
+        doc.records.forEach(r => {
           if (r.status === 'Present' && r.studentId) {
             const studentIdStr = typeof r.studentId === 'object' ? r.studentId._id : r.studentId;
             presentIds.add(studentIdStr.toString());
           }
+        });
+
+        const calculatedRecords = expectedStudents.map(student => ({
+          studentId: student._id,
+          name: student.name, 
+          std: student.std || 'N/A', 
+          batch: student.batch || 'N/A',
+          status: presentIds.has(student._id.toString()) ? 'Present' : 'Absent'
         }));
+
+        calculatedRecords.sort((a, b) => a.name.localeCompare(b.name));
+        setViewData(calculatedRecords);
+        if (m) {
+          setFetchDate(doc.date);
+          setFetchMonth('');
+        }
+      } else {
+        setIsMultiDay(false);
+        setViewData([]);
+        setCurrentAttendanceDocId(null);
       }
-
-      setCurrentAttendanceDocId(docId);
-
-      const calculatedRecords = expectedStudents.map(student => ({
-        studentId: student._id,
-        name: student.name, 
-        std: student.std || 'N/A', 
-        batch: student.batch || 'N/A',
-        status: presentIds.has(student._id.toString()) ? 'Present' : 'Absent'
-      }));
-
-      calculatedRecords.sort((a, b) => a.name.localeCompare(b.name));
-      setViewData(calculatedRecords);
     } catch (err) { alert("Failed to fetch records."); } 
     finally { setIsFetching(false); }
+  };
+
+  const handleLoadSingleSheet = (date, std, batch) => {
+    setFetchDate(date);
+    setFetchStd(std);
+    setFetchBatch(batch);
+    setFetchMonth('');
+    handleFetchAttendance(date, std, batch, '');
   };
 
   const handleToggleSingleStatus = async (studentId, currentStatus) => {
@@ -656,26 +717,103 @@ const AttendanceTab = ({ students }) => {
 
   const handleExportCurrentView = () => {
     if (viewData.length === 0) return alert("No fetched records available to export.");
-    let csv = "Student Name,Standard,Batch,Status\n";
-    viewData.forEach(r => {
-      csv += `"${r.name}","${r.std}","${r.batch}","${r.status}"\n`;
-    });
+    let csv = "";
+    if (isMultiDay) {
+      csv = "Date,Standard,Batch,Presents,Absentees\n";
+      viewData.forEach(r => {
+        csv += `"${r.date}","${r.std}","${r.batch}",${r.presentCount},${r.absentCount}\n`;
+      });
+    } else {
+      csv = "Student Name,Standard,Batch,Status\n";
+      viewData.forEach(r => {
+        csv += `"${r.name}","${r.std}","${r.batch}","${r.status}"\n`;
+      });
+    }
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', `Attendance_Report_${fetchDate}_${fetchStd}.csv`);
+    link.setAttribute('download', isMultiDay ? `Attendance_Ledger_Export.csv` : `Attendance_Report_${fetchDate}_${fetchStd}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const displayedRecords = viewData.filter(r => viewStatusFilter === 'All' || r.status === viewStatusFilter);
+  // Student Report Fetch Handler
+  const handleFetchStudentReport = async () => {
+    if (!reportStudentId) return;
+    setReportLoading(true);
+    try {
+      const res = await api.get(`/teacher/attendance/student/${reportStudentId}?month=${reportMonth || 'All'}`);
+      
+      let records = res.data.map(doc => {
+        const studentRec = doc.records.find(r => {
+          const sId = typeof r.studentId === 'object' ? r.studentId._id : r.studentId;
+          return sId.toString() === reportStudentId.toString();
+        });
+        return {
+          date: doc.date,
+          std: doc.std,
+          batch: doc.batch,
+          status: studentRec ? studentRec.status : 'N/A'
+        };
+      });
+
+      if (reportStartDate) {
+        records = records.filter(r => r.date >= reportStartDate);
+      }
+      if (reportEndDate) {
+        records = records.filter(r => r.date <= reportEndDate);
+      }
+
+      setReportData(records);
+    } catch (err) {
+      alert("Failed to fetch student report.");
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const handleExportStudentReport = () => {
+    if (reportData.length === 0) return alert("No report data available to export.");
+    const selectedStudent = students.find(s => s._id === reportStudentId);
+    const studentName = selectedStudent ? selectedStudent.name : "Student";
+    
+    let csv = "Date,Standard,Batch,Status\n";
+    reportData.forEach(r => {
+      csv += `"${r.date}","${r.std}","${r.batch}","${r.status}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `${studentName}_Attendance_Report.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Trigger report fetch automatically on filter change
+  useEffect(() => {
+    if (tabMode === 'report' && reportStudentId) {
+      handleFetchStudentReport();
+    }
+  }, [reportStudentId, reportMonth, reportStartDate, reportEndDate, tabMode]);
+
+  const displayedRecords = isMultiDay 
+    ? viewData 
+    : viewData.filter(r => viewStatusFilter === 'All' || r.status === viewStatusFilter);
+
+  // Student Report Statistics
+  const totalDays = reportData.length;
+  const presentDays = reportData.filter(r => r.status === 'Present').length;
+  const absentDays = reportData.filter(r => r.status === 'Absent').length;
+  const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
-      <div className="flex gap-2 md:gap-4 mb-6 md:mb-8 border-b pb-4">
+      <div className="flex flex-wrap gap-2 md:gap-4 mb-6 md:mb-8 border-b pb-4">
         <button onClick={() => setTabMode('record')} className={`pb-2 px-1 md:px-2 font-bold text-sm md:text-lg ${tabMode === 'record' ? 'border-b-4 border-purple-600 text-purple-700' : 'text-gray-400'}`}>Record Attendance</button>
         <button onClick={() => {setTabMode('view'); handleFetchAttendance();}} className={`pb-2 px-1 md:px-2 font-bold text-sm md:text-lg ${tabMode === 'view' ? 'border-b-4 border-purple-600 text-purple-700' : 'text-gray-400'}`}>View & Edit Records</button>
+        <button onClick={() => setTabMode('report')} className={`pb-2 px-1 md:px-2 font-bold text-sm md:text-lg ${tabMode === 'report' ? 'border-b-4 border-purple-600 text-purple-700' : 'text-gray-400'}`}>Student Report</button>
       </div>
 
       {tabMode === 'record' && (
@@ -688,14 +826,55 @@ const AttendanceTab = ({ students }) => {
           </div>
           
           {/* ✅ Responsive Buttons */}
-          <div className="flex flex-col sm:flex-row gap-2 mb-6">
+          <div className="flex flex-col sm:flex-row gap-2 mb-4">
             <button onClick={() => setMarkMode('markPresent')} className={`flex-1 px-4 py-3 sm:py-2 rounded-lg text-sm font-bold ${markMode === 'markPresent' ? 'bg-green-500 text-white shadow-md' : 'bg-gray-100 text-gray-500'}`}>Check Presents</button>
             <button onClick={() => setMarkMode('markAbsent')} className={`flex-1 px-4 py-3 sm:py-2 rounded-lg text-sm font-bold ${markMode === 'markAbsent' ? 'bg-red-500 text-white shadow-md' : 'bg-gray-100 text-gray-500'}`}>Check Absentees</button>
           </div>
+
+          {/* Quick Mark All & Live Search */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4 p-3 bg-gray-50 rounded-lg border">
+            <div className="flex gap-2">
+              <button 
+                type="button"
+                onClick={() => {
+                  if (markMode === 'markPresent') {
+                    setSelectedIds(new Set(filteredStudents.map(s => s._id)));
+                  } else {
+                    setSelectedIds(new Set());
+                  }
+                }} 
+                className="px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 rounded-lg text-xs font-bold transition-colors"
+              >
+                Mark All Present
+              </button>
+              <button 
+                type="button"
+                onClick={() => {
+                  if (markMode === 'markPresent') {
+                    setSelectedIds(new Set());
+                  } else {
+                    setSelectedIds(new Set(filteredStudents.map(s => s._id)));
+                  }
+                }} 
+                className="px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 rounded-lg text-xs font-bold transition-colors"
+              >
+                Mark All Absent
+              </button>
+            </div>
+            <div className="relative flex-1">
+              <input 
+                type="text" 
+                placeholder="Search student by name..." 
+                value={recordSearch} 
+                onChange={e => setRecordSearch(e.target.value)} 
+                className="w-full p-1.5 px-3 border rounded-lg text-xs"
+              />
+            </div>
+          </div>
           
           <div className="space-y-2 mb-6 max-h-96 overflow-y-auto pr-2">
-            {filteredStudents.length === 0 && <p className="text-gray-500 italic p-4 text-center border rounded-lg bg-gray-50 text-sm">No students found for this filter.</p>}
-            {filteredStudents.map(student => (
+            {recordFilteredStudents.length === 0 && <p className="text-gray-500 italic p-4 text-center border rounded-lg bg-gray-50 text-sm">No students found for this filter.</p>}
+            {recordFilteredStudents.map(student => (
               <label key={student._id} className="flex items-center gap-3 md:gap-4 p-3 border rounded-lg cursor-pointer hover:bg-purple-50 transition-colors">
                 <input type="checkbox" checked={selectedIds.has(student._id)} onChange={() => toggleStudent(student._id)} className="w-5 h-5 accent-purple-600 shrink-0" />
                 <div><p className="font-bold text-sm md:text-base text-gray-900">{student.name}</p><p className="text-[10px] md:text-xs text-gray-500">{student.std} • {student.batch}</p></div>
@@ -710,10 +889,22 @@ const AttendanceTab = ({ students }) => {
         <div className="animate-fade-in">
            {/* ✅ FIXED FILTER OVERFLOW: Switched to flex-col on mobile so they stack cleanly instead of squishing into 6 columns */}
            <div className="flex flex-col lg:flex-row gap-3 md:gap-4 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200 lg:items-end">
-            <div className="w-full"><label className="block text-xs font-bold text-gray-700 mb-1">Date</label><input type="date" value={fetchDate} onChange={(e) => setFetchDate(e.target.value)} className="w-full p-2.5 border rounded-lg text-sm" /></div>
+            <div className="w-full">
+              <label className="block text-xs font-bold text-gray-700 mb-1">Date</label>
+              <div className="flex gap-1">
+                <input type="date" value={fetchDate} onChange={(e) => { setFetchDate(e.target.value); if (e.target.value) setFetchMonth(''); }} className="w-full p-2.5 border rounded-lg text-sm" />
+                {fetchDate && (
+                  <button onClick={() => setFetchDate('')} className="px-2 bg-gray-200 text-gray-700 rounded-lg text-xs font-bold">Clear</button>
+                )}
+              </div>
+            </div>
+            <div className="w-full">
+              <label className="block text-xs font-bold text-gray-700 mb-1">Or Month</label>
+              <input type="month" value={fetchMonth} onChange={(e) => { setFetchMonth(e.target.value); if (e.target.value) setFetchDate(''); }} className="w-full p-2.5 border rounded-lg text-sm bg-white" />
+            </div>
             <div className="w-full"><label className="block text-xs font-bold text-gray-700 mb-1">Standard</label><select value={fetchStd} onChange={e => setFetchStd(e.target.value)} className="w-full p-2.5 border rounded-lg text-sm bg-white"><option value="All">All Standards</option>{standardOptions.map(std => <option key={std} value={std}>{std}</option>)}</select></div>
             <div className="w-full"><label className="block text-xs font-bold text-gray-700 mb-1">Batch</label><select value={fetchBatch} onChange={e => setFetchBatch(e.target.value)} className="w-full p-2.5 border rounded-lg text-sm bg-white"><option value="All">All Batches</option><option value="Morning">Morning</option><option value="Evening">Evening</option></select></div>
-            <div className="w-full"><label className="block text-xs font-bold text-gray-700 mb-1">Status</label><select value={viewStatusFilter} onChange={e => setViewStatusFilter(e.target.value)} className="w-full p-2.5 border rounded-lg text-sm border-purple-300 font-bold text-purple-700 bg-white"><option value="All">Show All</option><option value="Present">Present Only</option><option value="Absent">Absent Only</option></select></div>
+            {!isMultiDay && <div className="w-full"><label className="block text-xs font-bold text-gray-700 mb-1">Status</label><select value={viewStatusFilter} onChange={e => setViewStatusFilter(e.target.value)} className="w-full p-2.5 border rounded-lg text-sm border-purple-300 font-bold text-purple-700 bg-white"><option value="All">Show All</option><option value="Present">Present Only</option><option value="Absent">Absent Only</option></select></div>}
             
             {/* Action Buttons wrapped in a full-width container on mobile */}
             <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full lg:w-auto h-[42px] mt-2 lg:mt-0">
@@ -722,22 +913,232 @@ const AttendanceTab = ({ students }) => {
               {currentAttendanceDocId && <button onClick={handleDeleteAttendance} className="flex-1 sm:flex-none px-4 bg-red-100 text-red-600 rounded-lg font-bold hover:bg-red-200 text-sm shadow-sm flex items-center justify-center h-full"><Trash2 size={18}/></button>}
             </div>
           </div>
+
+          {/* Stats Summary for Single Day */}
+          {!isMultiDay && viewData.length > 0 && (
+            <div className="grid grid-cols-3 gap-3 md:gap-4 mb-4">
+              <div className="bg-green-50 p-3 rounded-lg border border-green-100 text-center shadow-sm">
+                <span className="text-xs text-green-700 font-bold block">Present</span>
+                <span className="text-base md:text-lg font-black text-green-950">{viewData.filter(r => r.status === 'Present').length}</span>
+              </div>
+              <div className="bg-red-50 p-3 rounded-lg border border-red-100 text-center shadow-sm">
+                <span className="text-xs text-red-700 font-bold block">Absent</span>
+                <span className="text-base md:text-lg font-black text-red-950">{viewData.filter(r => r.status === 'Absent').length}</span>
+              </div>
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 text-center shadow-sm">
+                <span className="text-xs text-blue-700 font-bold block">Rate</span>
+                <span className="text-base md:text-lg font-black text-blue-950">
+                  {Math.round((viewData.filter(r => r.status === 'Present').length / viewData.length) * 100) || 0}%
+                </span>
+              </div>
+            </div>
+          )}
           
           {/* ✅ Responsive Table Wrapper */}
           <div className="w-full overflow-x-auto border rounded-xl bg-white shadow-sm">
             <table className="w-full text-left border-collapse min-w-[500px]">
-              <thead><tr className="bg-gray-100 border-b"><th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700">Student Name</th><th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700">Standard</th><th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700 text-right">Status (Click to toggle)</th></tr></thead>
-              <tbody>
-                {displayedRecords.length === 0 ? (<tr><td colSpan="3" className="p-6 md:p-8 text-center text-sm text-gray-500">No records to display.</td></tr>) : (
-                  displayedRecords.map((record, idx) => (
-                    <tr key={idx} className="border-b hover:bg-gray-50">
-                      <td className="p-3 md:p-4 text-sm font-bold text-gray-900">{record.name}</td>
-                      <td className="p-3 md:p-4 text-xs md:text-sm text-gray-600">{record.std} • {record.batch}</td>
-                      <td className="p-3 md:p-4 text-right">
-                        <button onClick={() => handleToggleSingleStatus(record.studentId, record.status)} title="Click to change status" className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm transition-transform hover:scale-105 ${record.status === 'Present' ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}>{record.status}</button>
-                      </td>
+              {isMultiDay ? (
+                <>
+                  <thead>
+                    <tr className="bg-gray-100 border-b">
+                      <th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700">Date</th>
+                      <th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700">Standard / Batch</th>
+                      <th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700 text-center">Present / Absent</th>
+                      <th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700 text-right">Action</th>
                     </tr>
-                  ))
+                  </thead>
+                  <tbody>
+                    {displayedRecords.length === 0 ? (
+                      <tr><td colSpan="4" className="p-6 md:p-8 text-center text-sm text-gray-500">No sheets found for this range.</td></tr>
+                    ) : (
+                      displayedRecords.map((sheet, idx) => (
+                        <tr key={idx} className="border-b hover:bg-gray-50">
+                          <td className="p-3 md:p-4 text-sm font-bold text-gray-900">{sheet.date}</td>
+                          <td className="p-3 md:p-4 text-xs md:text-sm text-gray-600">{sheet.std} • {sheet.batch}</td>
+                          <td className="p-3 md:p-4 text-center text-sm">
+                            <span className="text-green-700 font-bold">{sheet.presentCount} P</span>
+                            {" / "}
+                            <span className="text-red-700 font-bold">{sheet.absentCount} A</span>
+                          </td>
+                          <td className="p-3 md:p-4 text-right">
+                            <button 
+                              onClick={() => handleLoadSingleSheet(sheet.date, sheet.std, sheet.batch)}
+                              className="px-3 py-1 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg text-xs font-bold shadow-sm transition-transform hover:scale-105"
+                            >
+                              Load Sheet
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </>
+              ) : (
+                <>
+                  <thead><tr className="bg-gray-100 border-b"><th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700">Student Name</th><th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700">Standard</th><th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700 text-right">Status (Click to toggle)</th></tr></thead>
+                  <tbody>
+                    {displayedRecords.length === 0 ? (<tr><td colSpan="3" className="p-6 md:p-8 text-center text-sm text-gray-500">No records to display.</td></tr>) : (
+                      displayedRecords.map((record, idx) => (
+                        <tr key={idx} className="border-b hover:bg-gray-50">
+                          <td className="p-3 md:p-4 text-sm font-bold text-gray-900">{record.name}</td>
+                          <td className="p-3 md:p-4 text-xs md:text-sm text-gray-600">{record.std} • {record.batch}</td>
+                          <td className="p-3 md:p-4 text-right">
+                            <button onClick={() => handleToggleSingleStatus(record.studentId, record.status)} title="Click to change status" className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm transition-transform hover:scale-105 ${record.status === 'Present' ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}>{record.status}</button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </>
+              )}
+            </table>
+          </div>
+        </div>
+      )}
+
+      {tabMode === 'report' && (
+        <div className="animate-fade-in">
+          {/* Filters & Selector */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Select Student</label>
+              <select 
+                value={reportStudentId} 
+                onChange={e => setReportStudentId(e.target.value)} 
+                className="w-full p-2.5 border rounded-lg text-sm bg-white"
+              >
+                <option value="">-- Choose Student --</option>
+                {students.map(s => (
+                  <option key={s._id} value={s._id}>{s.name} ({s.std || 'N/A'} - {s.batch || 'N/A'})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Filter by Month</label>
+              <input 
+                type="month" 
+                value={reportMonth} 
+                onChange={e => setReportMonth(e.target.value)} 
+                className="w-full p-2.5 border rounded-lg text-sm bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">From Date</label>
+              <input 
+                type="date" 
+                value={reportStartDate} 
+                onChange={e => setReportStartDate(e.target.value)} 
+                className="w-full p-2.5 border rounded-lg text-sm bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">To Date</label>
+              <input 
+                type="date" 
+                value={reportEndDate} 
+                onChange={e => setReportEndDate(e.target.value)} 
+                className="w-full p-2.5 border rounded-lg text-sm bg-white"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+            <div>
+              <label className="inline-flex items-center gap-2 text-xs font-bold text-gray-700 mr-2">Status Filter:</label>
+              <select 
+                value={reportStatusFilter} 
+                onChange={e => setReportStatusFilter(e.target.value)} 
+                className="p-2 border rounded-lg text-sm bg-white font-semibold text-purple-700"
+              >
+                <option value="All">All Records</option>
+                <option value="Present">Present Only</option>
+                <option value="Absent">Absent Only</option>
+              </select>
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button 
+                onClick={handleFetchStudentReport} 
+                disabled={reportLoading}
+                className="flex-1 sm:flex-none px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold text-sm shadow transition-colors"
+              >
+                {reportLoading ? 'Loading...' : 'Refresh'}
+              </button>
+              <button 
+                onClick={handleExportStudentReport} 
+                className="flex-1 sm:flex-none px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-sm shadow flex items-center justify-center gap-1 transition-colors"
+              >
+                <Download size={16}/> Export CSV
+              </button>
+            </div>
+          </div>
+
+          {/* Stats Dashboard */}
+          {reportStudentId && reportData.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+              <div className="bg-purple-50 border border-purple-100 p-4 rounded-xl text-center shadow-sm">
+                <p className="text-xs font-semibold text-purple-600 uppercase tracking-wider">Total Days</p>
+                <h3 className="text-xl md:text-2xl font-black text-purple-900 mt-1">{totalDays}</h3>
+              </div>
+              <div className="bg-green-50 border border-green-100 p-4 rounded-xl text-center shadow-sm">
+                <p className="text-xs font-semibold text-green-600 uppercase tracking-wider">Present</p>
+                <h3 className="text-xl md:text-2xl font-black text-green-900 mt-1">{presentDays}</h3>
+              </div>
+              <div className="bg-red-50 border border-red-100 p-4 rounded-xl text-center shadow-sm">
+                <p className="text-xs font-semibold text-red-600 uppercase tracking-wider">Absent</p>
+                <h3 className="text-xl md:text-2xl font-black text-red-900 mt-1">{absentDays}</h3>
+              </div>
+              <div className={`p-4 rounded-xl text-center border shadow-sm ${
+                attendancePercentage >= 80 ? 'bg-emerald-50 border-emerald-100' :
+                attendancePercentage >= 60 ? 'bg-amber-50 border-amber-100' :
+                'bg-rose-50 border-rose-100'
+              }`}>
+                <p className={`text-xs font-semibold uppercase tracking-wider ${
+                  attendancePercentage >= 80 ? 'text-emerald-600' :
+                  attendancePercentage >= 60 ? 'text-amber-600' :
+                  'text-rose-600'
+                }`}>Percentage</p>
+                <h3 className={`text-xl md:text-2xl font-black mt-1 ${
+                  attendancePercentage >= 80 ? 'text-emerald-900' :
+                  attendancePercentage >= 60 ? 'text-amber-900' :
+                  'text-rose-900'
+                }`}>{attendancePercentage}%</h3>
+              </div>
+            </div>
+          )}
+
+          {/* Table */}
+          <div className="w-full overflow-x-auto border rounded-xl bg-white shadow-sm">
+            <table className="w-full text-left border-collapse min-w-[500px]">
+              <thead>
+                <tr className="bg-gray-100 border-b">
+                  <th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700">Date</th>
+                  <th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700">Standard / Batch</th>
+                  <th className="p-3 md:p-4 text-xs md:text-sm font-bold text-gray-700 text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {!reportStudentId ? (
+                  <tr>
+                    <td colSpan="3" className="p-6 md:p-8 text-center text-sm text-gray-500 italic">Please select a student from the dropdown.</td>
+                  </tr>
+                ) : reportData.filter(r => reportStatusFilter === 'All' || r.status === reportStatusFilter).length === 0 ? (
+                  <tr>
+                    <td colSpan="3" className="p-6 md:p-8 text-center text-sm text-gray-500 italic">No attendance records found matching filters.</td>
+                  </tr>
+                ) : (
+                  reportData
+                    .filter(r => reportStatusFilter === 'All' || r.status === reportStatusFilter)
+                    .map((record, idx) => (
+                      <tr key={idx} className="border-b hover:bg-gray-50">
+                        <td className="p-3 md:p-4 text-sm font-bold text-gray-900">{record.date}</td>
+                        <td className="p-3 md:p-4 text-xs md:text-sm text-gray-600">{record.std} • {record.batch}</td>
+                        <td className="p-3 md:p-4 text-right">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            record.status === 'Present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          }`}>{record.status}</span>
+                        </td>
+                      </tr>
+                    ))
                 )}
               </tbody>
             </table>

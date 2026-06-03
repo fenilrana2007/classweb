@@ -1,6 +1,7 @@
 // backend/routes/adminRoutes.js
 const express = require('express');
 const router = express.Router();
+const { getStudentAttendanceSummary } = require('../controllers/teacherController');
 const { 
     getAdminStats, 
     getTeachers, 
@@ -38,6 +39,7 @@ router.delete('/users/:id', deleteUser);
 router.get('/messages', getMessages);
 router.post('/messages', sendMessage);
 router.get('/class-logs', getGlobalClassLogs);
+router.get('/attendance/student/:studentId', getStudentAttendanceSummary);
 
 // =========================================================================
 // THE MULTI-PURGE CONTROL INTERCEPT ROUTERS
