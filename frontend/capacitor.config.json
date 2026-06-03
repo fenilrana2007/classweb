@@ -2,5 +2,9 @@
   "appId": "com.unique.app",
   "appName": "unique coaching class",
   "webDir": "dist",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://classweb-frontend.onrender.com",
+    "cleartext": true
+  }
 }
