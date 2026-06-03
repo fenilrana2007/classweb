@@ -74,6 +74,7 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/teacher', require('./routes/teacherRoutes'));
 app.use('/api/students', require('./routes/studentRoutes'));
+app.use('/api/student', require('./routes/studentRoutes')); // Student portal: /api/student/dashboard, /api/student/class-logs
 app.use('/api/exams', require('./routes/examRoutes'));
 app.use('/api/fees', require('./routes/feeRoutes'));
 app.use('/api/achievements', require('./routes/achievementRoutes')); // Registered here

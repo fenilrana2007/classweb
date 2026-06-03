@@ -31,6 +31,6 @@ router.delete('/class-logs/:id', protect, deleteClassLog);
 
 router.post('/attendance', protect, submitAttendance);
 router.get('/attendance', protect, getAttendance);
-router.delete('/attendance/:id', protect, deleteAttendance); // <-- ADD THIS LINE
-router.delete('/attendance', protect, wipeAllAttendance); // <-- ADD THIS LINE
+router.delete('/attendance', protect, wipeAllAttendance);   // Must be BEFORE /:id route
+router.delete('/attendance/:id', protect, deleteAttendance);
 module.exports = router;
