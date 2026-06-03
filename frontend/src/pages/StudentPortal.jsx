@@ -861,7 +861,7 @@ const MyFeesTab = () => {
     loadFees();
   }, []);
 
-  const handleDownloadReceipt = () => {
+  const handleDownloadReceipt = async () => {
     if (!feeData || feeData.history.length === 0) return alert("No history to print.");
 
     const historyRows = feeData.history.map(p => `
