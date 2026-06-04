@@ -11,10 +11,12 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",
+    "@capacitor/browser": "^8.0.3",
     "@capacitor/core": "^8.3.4",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/share": "^8.0.1",
     "axios": "^1.16.1",
+    "html2pdf.js": "^0.14.0",
     "lucide-react": "^0.451.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

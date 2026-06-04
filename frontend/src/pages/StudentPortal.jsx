@@ -548,6 +548,7 @@
 import html2pdf from 'html2pdf.js';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Browser } from '@capacitor/browser';
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
@@ -1066,15 +1067,21 @@ const StudentClassLogsTab = () => {
               
               {log.attachmentLink && (
                 <div className="mt-4 pt-4 border-t border-gray-100">
-                  <a 
-                    href={log.attachmentLink.startsWith('http') ? log.attachmentLink : `https://${log.attachmentLink}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                  <button
+                    onClick={async () => {
+                      const url = log.attachmentLink.startsWith('http') ? log.attachmentLink : `https://${log.attachmentLink}`;
+                      if (Capacitor.isNativePlatform()) {
+                        // Use Capacitor Browser plugin to open links on mobile
+                        await Browser.open({ url });
+                      } else {
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
                     className="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-3 md:py-2.5 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm w-full md:w-auto"
                   >
-                    <LinkIcon size={16}/> 
+                    <LinkIcon size={16}/>
                     Open Attached Study Material
-                  </a>
+                  </button>
                 </div>
               )}
             </div>
