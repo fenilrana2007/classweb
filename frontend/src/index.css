@@ -115,3 +115,19 @@ html, body, #root {
   overflow-x: hidden;
   max-width: 100vw;
 }
+
+/* Make webview transparent when the scanner is active */
+body.scanner-active {
+  --background: transparent;
+  background: transparent !important;
+}
+
+/* Hide the main UI so we can see the camera feed underneath */
+body.scanner-active #root {
+  visibility: hidden;
+}
+
+/* Keep the scanner UI itself visible */
+body.scanner-active .scanner-ui {
+  visibility: visible !important;
+}
