@@ -91,7 +91,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
-import { BookOpen, Users, TrendingUp, Shield, ArrowRight, Award, Star } from 'lucide-react';
+import { BookOpen, Users, TrendingUp, Shield, ArrowRight, Award, Star, QrCode } from 'lucide-react';
 
 const Home = () => {
   const { user } = useContext(AuthContext);
@@ -182,6 +182,44 @@ const Home = () => {
           </button>
         </div>
       </main>
+
+      {/* App Download QR Section */}
+      <section className="py-12 bg-gradient-to-r from-indigo-50 to-blue-50 border-y border-indigo-100 relative z-20">
+        <div className="max-w-4xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="flex-1 text-left">
+            <span className="bg-indigo-100 text-indigo-700 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider">
+              Mobile App Available
+            </span>
+            <h2 className="text-3xl font-black text-gray-900 mt-3 mb-4">
+              Get the <span className="text-indigo-600">ClassWeb Mobile App</span>
+            </h2>
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              Scan the QR code with your phone camera or click the download button below to install our official app directly on your Android device. Track attendance, view grades, and manage fees instantly!
+            </p>
+            <a 
+              href="/unique-coaching-class.apk" 
+              download 
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all transform active:scale-95"
+            >
+              <QrCode size={18} />
+              Download APK Directly
+            </a>
+          </div>
+          
+          <div className="shrink-0 bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col items-center">
+            <div className="p-2 border-2 border-indigo-100 rounded-xl bg-gray-50 mb-3">
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(window.location.origin + '/unique-coaching-class.apk')}`} 
+                alt="Scan to Download App"
+                className="w-40 h-40"
+              />
+            </div>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+              Scan to Download APK
+            </span>
+          </div>
+        </div>
+      </section>
 
       {/* --- NEW: 3D AUTO-SCROLLING HALL OF FAME --- */}
       {achievements.length > 0 && (
