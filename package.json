@@ -1,5 +1,12 @@
 {
   "dependencies": {
     "html2pdf.js": "^0.14.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.98.0"
+  },
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "preview": "wrangler dev"
   }
 }
