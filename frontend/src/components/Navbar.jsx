@@ -75,6 +75,7 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { BookOpen, LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
+import logo from '../assets/logo.jpeg';
 
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
@@ -109,10 +110,12 @@ const Navbar = () => {
         <div className="flex justify-between h-16 items-center">
           
           {/* Logo Section */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="bg-indigo-600 p-2 rounded-lg group-hover:bg-indigo-700 transition-colors">
-              <BookOpen className="h-6 w-6 text-white" />
-            </div>
+          <Link to="/" className="flex items-center gap-3 group">
+            <img 
+              src={logo} 
+              alt="Unique Coaching Class Logo" 
+              className="h-10 w-10 object-cover rounded-lg border border-gray-100 shadow-sm group-hover:scale-105 transition-all duration-300"
+            />
             <span className="font-bold text-xl text-gray-900 tracking-tight">
               Unique<span className="text-indigo-600">coaching class</span>
             </span>
